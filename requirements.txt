@@ -1,0 +1,27 @@
+# RF S-parameter Analyzer - Dependencies
+
+# Core RF Libraries
+scikit-rf>=0.29.0        # Touchstone (SnP) file parsing
+
+# Data Processing
+pandas>=2.1.0            # CSV processing and data manipulation
+numpy>=1.25.0            # Numerical computations
+
+# Visualization
+plotly>=5.17.0           # Interactive charts
+
+# Optional: PDF Export
+weasyprint>=60.0         # HTML to PDF conversion (Phase 2)
+
+# Optional: Image Export
+kaleido>=0.2.1           # Plotly static image export
+
+# Development & Testing
+pytest>=7.4.0            # Testing framework
+pytest-cov>=4.1.0        # Test coverage
+black>=23.9.0            # Code formatting
+ruff>=0.0.292            # Linting
+
+# Django Integration (Phase 2)
+# Django>=5.0,<6.0
+# django-htmx>=1.17.0

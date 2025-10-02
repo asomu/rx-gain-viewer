@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(where python)",
+      "Bash(C:UsersasomuAppDataLocalProgramsPythonPython312python.exe --version)",
+      "Bash(py --version)",
+      "Bash(py:*)",
+      "Bash(venvScripts:*)",
+      "Bash(pip install:*)",
+      "Bash(.venvScriptspip.exe install --upgrade pip)",
+      "Bash(uv:*)",
+      "Bash(../.venv/Scripts/python.exe:*)",
+      "Bash(../.venv/Scripts/django-admin.exe startproject config .)",
+      "Bash(cat:*)",
+      "Bash(tree:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

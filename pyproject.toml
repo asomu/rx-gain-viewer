@@ -1,0 +1,51 @@
+[project]
+name = "rf-sparameter-analyzer"
+version = "0.1.0"
+description = "PA Module S-parameter data analysis and visualization tool"
+authors = [
+    {name = "RF Engineering Team"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "scikit-rf>=0.29.0",
+    "pandas>=2.1.0",
+    "numpy>=1.25.0",
+    "plotly>=5.17.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "black>=23.9.0",
+    "ruff>=0.0.292",
+]
+pdf = [
+    "weasyprint>=60.0",
+]
+image = [
+    "kaleido>=0.2.1",
+]
+django = [
+    "Django>=5.0,<6.0",
+    "django-htmx>=1.17.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["prototype/tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
