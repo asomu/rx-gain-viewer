@@ -47,3 +47,11 @@ local_settings.py
 # OS
 .DS_Store
 Thumbs.db
+
+prototype/output/
+prototype/output_grids/
+prototype/high_quality_test/
+prototype/sample_grids/
+prototype/test_pdf_images/
+ppt_test/
+vector_pdf_test/

@@ -1,0 +1,111 @@
+{% extends 'rf_analyzer/base.html' %}
+
+{% block title %}Upload CSV - RF Analyzer{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">📊 Upload CSV File</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Upload a consolidated CSV file (e.g., Bellagio_POC_Rx.csv) to analyze RF S-parameter data.
+                </p>
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <!-- Session Name -->
+                    <div class="mb-3">
+                        <label for="{{ form.session_name.id_for_label }}" class="form-label">
+                            {{ form.session_name.label }}
+                        </label>
+                        {{ form.session_name }}
+                        {% if form.session_name.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.session_name.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">
+                            {{ form.description.label }}
+                        </label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.description.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- CSV File -->
+                    <div class="mb-3">
+                        <label for="{{ form.csv_file.id_for_label }}" class="form-label">
+                            {{ form.csv_file.label }}
+                        </label>
+                        {{ form.csv_file }}
+                        {% if form.csv_file.help_text %}
+                            <div class="form-text">{{ form.csv_file.help_text }}</div>
+                        {% endif %}
+                        {% if form.csv_file.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.csv_file.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            📤 Upload and Analyze
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Recent Sessions -->
+        {% if recent_sessions %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">📁 Recent Sessions</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for session in recent_sessions %}
+                <a href="{% url 'rf_analyzer:viewer' session.id %}" class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">{{ session.name }}</h6>
+                        <small class="text-muted">{{ session.created_at|date:"Y-m-d H:i" }}</small>
+                    </div>
+                    {% if session.description %}
+                        <p class="mb-1 text-muted small">{{ session.description|truncatewords:15 }}</p>
+                    {% endif %}
+                    <small class="text-muted">
+                        {{ session.data_points.count }} data points
+                    </small>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // File input preview
+    document.querySelector('input[type="file"]').addEventListener('change', function(e) {
+        const fileName = e.target.files[0]?.name;
+        if (fileName) {
+            const fileSize = (e.target.files[0].size / (1024 * 1024)).toFixed(2);
+            console.log(`Selected: ${fileName} (${fileSize} MB)`);
+        }
+    });
+</script>
+{% endblock %}

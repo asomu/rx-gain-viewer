@@ -7,13 +7,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 📊 Project Status
 
 **Project**: RF S-parameter Analyzer for PA Module Testing
-**Stage**: Active Development - Phase 2 (Django Web App)
-**Last Updated**: 2025-10-03 00:35
+**Stage**: Active Development - PPT Automation Phase
+**Last Updated**: 2025-10-06 00:30
 
 ### Current Progress
 - **Phase 1 (Prototype)**: 100% ✅ Complete
-- **Phase 2 (Django App)**: 40% 🚧 In Progress
-- **Overall**: ~60% Complete
+- **Phase 1.5 (CSV Support + Grid Generation)**: 100% ✅ Complete
+- **Phase 1.6 (PPT Automation)**: 80% ⏸️ Template needed
+- **Phase 2 (Django App)**: 85% 🚧 Chart UI complete, export pending
+- **Overall**: ~85% Complete
 
 ---
 
@@ -125,6 +127,44 @@ B1[B7]@MHBIN1_ANTU&ANT1&ANT2_X@MIMO_X@TRX_B3[B7]@1_B41S@2_(G0H).s9p
 
 ---
 
+### 4. CSV Parser (Enhanced) ⭐ NEW
+
+**File**: `prototype/parsers/csv_parser.py`
+
+**Purpose**: Parse both simple CSV and consolidated measurement data (89 columns)
+
+**Supported Formats**:
+1. **Simple CSV**: frequency, gain_db format
+2. **Consolidated CSV**: 89-column format with 109K+ measurement points
+
+**Key Features**:
+- Auto-detection of CSV format
+- Active RF Path mapping (S0706 = ANT1→RXOUT1)
+- Multi-band support (22 bands: B1-B66, n70, n75, n76)
+- Multi-port support (12 port combinations)
+
+**Key Methods**:
+- `auto_detect_and_load()` - Auto-detect format and load
+- `load_consolidated()` - Load 89-column consolidated format
+- `get_data_by_filter(band, active_rf_path)` - Extract filtered data
+- `get_available_bands()` - List all bands
+- `get_available_paths(band)` - List port combinations
+- `get_band_frequency_range(band)` - Get frequency range
+
+**Example Usage**:
+```python
+parser = CsvParser('data/Bellagio_POC_Rx.csv')
+parser.load_consolidated()
+
+# Get B1 band, ANT1→RXOUT1 data
+data = parser.get_data_by_filter(band='B1', active_rf_path='S0706')
+# Returns: frequency (549 points), gain_db, port labels, etc.
+```
+
+**See**: [docs/csv-format-analysis.md](docs/csv-format-analysis.md)
+
+---
+
 ## 🚀 Development Workflow
 
 ### Starting a Session
@@ -233,7 +273,7 @@ Measurement files follow complex patterns from test equipment:
 
 ### Grid Layout
 
-**Structure**:
+**SnP File Grid Structure**:
 - **Tabs**: One per main Band (B1, B3, B41, etc.)
 - **Rows**: Port combinations (e.g., MHBIN1→ANTU_ANT1_ANT2)
 - **Columns**: CA conditions (e.g., B3_B7_B41, B3_B7_B7)
@@ -245,6 +285,22 @@ B1 Tab:
          B3_B7_B41   B3_B7_B7
 MHBIN1→  [Chart]     [Chart]
 MHBIN2→  [Chart]     [Chart]
+```
+
+**CSV File Grid Structure** (New):
+- **Tabs**: One per Band (B1, B3, B7, B41, etc.)
+- **Rows**: Port combinations (ANT1→RXOUT1, ANT2→RXOUT1, etc.)
+- **Columns**: LNA gain states (G0_H, G0_M, G0_L) or single column
+- **Cells**: Filtered CSV data charts
+
+**Supported Port Combinations** (CSV):
+```
+ANT1 → RXOUT1 (S0706)    ANT1 → RXOUT2 (S0306)
+ANT2 → RXOUT1 (S0705)    ANT2 → RXOUT2 (S0305)
+ANTL → RXOUT1 (S0702)    ANTL → RXOUT2 (S0302)
+ANT1 → RXOUT3 (S0806)    ANT1 → RXOUT4 (S0406)
+ANT2 → RXOUT3 (S0805)    ANT2 → RXOUT4 (S0405)
+ANTL → RXOUT3 (S0802)    ANTL → RXOUT4 (S0402)
 ```
 
 ---
@@ -259,6 +315,19 @@ python filename_parser.py  # Test parser standalone
 python main.py             # Generate demo charts
 ```
 
+### CSV Parser Testing ⭐ NEW
+
+```bash
+cd prototype
+..\.venv\Scripts\python.exe test_csv_parser.py
+
+# Test Results:
+# ✓ Loaded 109,884 data points with 22 bands and 12 Active RF Paths
+# ✓ Auto-detected consolidated format
+# ✓ Extracted B1 band S0706 data: 549 points, 2110-2170 MHz
+# ✓ Tested multiple bands: B1, B3, B7, B41
+```
+
 ### Django Testing
 
 ```bash
@@ -271,10 +340,11 @@ python manage.py test rf_analyzer
 ## 📚 Key Documentation
 
 **Essential Reading**:
-1. [docs/session-2025-10-02.md](docs/session-2025-10-02.md) - Latest development session
-2. [docs/actual-filename-format.md](docs/actual-filename-format.md) - Filename parsing rules
-3. [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Complete project structure
-4. [docs/tech-stack-decision.md](docs/tech-stack-decision.md) - Architecture decisions
+1. **[docs/csv-format-analysis.md](docs/csv-format-analysis.md)** - ⭐ CSV format specification (NEW)
+2. [docs/session-2025-10-02.md](docs/session-2025-10-02.md) - Latest development session
+3. [docs/actual-filename-format.md](docs/actual-filename-format.md) - Filename parsing rules
+4. [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Complete project structure
+5. [docs/tech-stack-decision.md](docs/tech-stack-decision.md) - Architecture decisions
 
 **Quick Reference**:
 - [docs/quickstart.md](docs/quickstart.md) - Prototype usage guide
@@ -414,3 +484,49 @@ When ready to integrate into production:
 **Last Session**: 2025-10-02 (2 hours)
 **Next Session Priority**: Complete Django views and HTMX templates
 **Estimated Remaining Time**: 6-8 hours to MVP
+
+---
+
+## 📊 PPT Automation (Phase 1.6) ⭐ NEW
+
+### PptGenerator 클래스
+**File**: `prototype/utils/ppt_generator.py`
+
+**Purpose**: PowerPoint 자동 생성 (기존 템플릿 지원)
+
+**Key Features**:
+- 기존 회사 템플릿 PPT 열기
+- 슬라이드 자동 추가 (제목 + 이미지)
+- 426장 배치 생성
+
+**사용법**:
+```python
+from pathlib import Path
+from utils.ppt_generator import PptGenerator
+
+# 템플릿 사용
+template = Path("company_template.pptx")
+generator = PptGenerator(template)
+
+# 슬라이드 추가
+for band, lna, port in conditions:
+    title = f"{band} {lna} {port} LNA Gain"
+    image = Path(f"{band}_{lna}_{port}.png")
+    generator.add_slide_with_image(title, image)
+
+# 저장 (템플릿 + 새 슬라이드)
+generator.save(Path("output.pptx"))
+```
+
+### 벡터 vs 래스터 이미지
+| 포맷 | 타입 | 확대 품질 | PPT 지원 | 크기 |
+|------|------|----------|----------|------|
+| PNG | 래스터 | ❌ 지글지글 | ✅ 필수 | 213 KB |
+| PDF | 벡터 | ✅ 선명 | ⚠️ 부분적 | 32 KB |
+| SVG | 벡터 | ✅ 선명 | ❌ 미지원 | 32 KB |
+
+**결론**: PPT는 PNG 필수, 벡터 품질 원하면 PDF/SVG 별도 보관
+
+**Next**: 템플릿 PPT 업로드 → 426장 자동 생성 (4-5분)
+
+**Session Log**: [docs/session-2025-10-03-part2.md](docs/session-2025-10-03-part2.md)

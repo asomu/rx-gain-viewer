@@ -1,0 +1,183 @@
+{% extends 'rf_analyzer/base.html' %}
+
+{% block title %}Grid Viewer - {{ session.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Left Sidebar: Filters -->
+    <div class="col-md-3">
+        <div class="card filter-sidebar">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">🎛️ Filters</h5>
+            </div>
+            <div class="card-body">
+                <!-- Session Info -->
+                <div class="mb-3">
+                    <h6 class="text-muted">Session</h6>
+                    <p class="mb-0"><strong>{{ session.name }}</strong></p>
+                    <small class="text-muted">{{ session.created_at|date:"Y-m-d H:i" }}</small>
+                </div>
+
+                <hr>
+
+                <!-- Band Filter -->
+                <div class="mb-3">
+                    <label class="form-label"><strong>Band</strong></label>
+                    <select class="form-select" id="bandSelect">
+                        {% for band in bands %}
+                            <option value="{{ band }}" {% if band == selected_band %}selected{% endif %}>
+                                {{ band }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- LNA Gain State Filter -->
+                <div class="mb-3">
+                    <label class="form-label"><strong>LNA Gain State</strong></label>
+                    <select class="form-select" id="lnaSelect">
+                        {% for lna in lna_states %}
+                            <option value="{{ lna }}" {% if lna == selected_lna %}selected{% endif %}>
+                                {{ lna }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Input Port Filter -->
+                <div class="mb-3">
+                    <label class="form-label"><strong>Input Port</strong></label>
+                    <select class="form-select" id="portSelect">
+                        {% for port in input_ports %}
+                            <option value="{{ port }}" {% if port == selected_port %}selected{% endif %}>
+                                {{ port }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <hr>
+
+                <!-- Export Buttons -->
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-danger" id="exportPdfBtn">
+                        📄 Export PDF
+                    </button>
+                    <button class="btn btn-outline-success" id="exportPptBtn">
+                        📊 Export PPT
+                    </button>
+                </div>
+
+                <hr>
+
+                <!-- Data Info -->
+                <div class="small text-muted">
+                    <p class="mb-1">
+                        <strong>Total Points:</strong> {{ session.data_points.count }}
+                    </p>
+                    <p class="mb-0">
+                        <strong>Bands:</strong> {{ bands|length }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Chart Container -->
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    📈 Grid Chart: {{ selected_band }} / {{ selected_lna }} / {{ selected_port }}
+                </h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-primary" onclick="Plotly.downloadImage('chart', {format: 'png', width: 1920, height: 1200, filename: 'grid_chart'})">
+                        💾 Save PNG
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Chart will be loaded here -->
+                <div id="chart" style="width: 100%; height: 800px;">
+                    <div class="text-center p-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3 text-muted">Loading chart data...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Load chart on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadChart();
+    });
+
+    function loadChart() {
+        const band = document.getElementById('bandSelect').value;
+        const lna = document.getElementById('lnaSelect').value;
+        const port = document.getElementById('portSelect').value;
+        const sessionId = {{ session.id }};
+
+        // Show loading spinner
+        const chartDiv = document.getElementById('chart');
+        chartDiv.innerHTML = `
+            <div class="text-center p-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3 text-muted">Generating chart for ${band} / ${lna} / ${port}...</p>
+            </div>
+        `;
+
+        // Call chart API
+        fetch(`/rf-analyzer/api/chart/${sessionId}/?band=${band}&lna=${lna}&port=${port}`)
+            .then(response => response.json())
+            .then(data => {
+                    // Clear loading spinner first
+                    chartDiv.innerHTML = "";
+                if (data.success) {
+                    // Parse Plotly JSON and render chart
+                    const chartData = JSON.parse(data.chart);
+                    Plotly.newPlot('chart', chartData.data, chartData.layout, {responsive: true});
+
+                    console.log(`Chart loaded: ${data.data_points} data points`);
+                } else {
+                    chartDiv.innerHTML = `
+                        <div class="alert alert-danger">
+                            <strong>Error:</strong> ${data.error || 'Failed to load chart'}
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Chart loading error:', error);
+                chartDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <strong>Error:</strong> Failed to load chart. ${error.message}
+                    </div>
+                `;
+            });
+    }
+
+    // Update chart when filters change
+    document.querySelectorAll('select').forEach(select => {
+        select.addEventListener('change', loadChart);
+    });
+
+    // Export buttons (placeholder)
+    document.getElementById('exportPdfBtn').addEventListener('click', function() {
+        alert('PDF export coming soon!');
+    });
+
+    document.getElementById('exportPptBtn').addEventListener('click', function() {
+        alert('PPT export coming soon!');
+    });
+</script>
+{% endblock %}
