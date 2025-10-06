@@ -63,6 +63,9 @@
                     <button class="btn btn-outline-danger" id="exportPdfBtn">
                         📄 Export PDF
                     </button>
+                    <button class="btn btn-outline-warning" id="exportFullReportPdfBtn">
+                        📑 Full Report PDF
+                    </button>
                     <button class="btn btn-outline-success" id="exportPptBtn">
                         📊 Export PPT
                     </button>
@@ -171,9 +174,71 @@
         select.addEventListener('change', loadChart);
     });
 
-    // Export buttons (placeholder)
+    // PDF Export button
     document.getElementById('exportPdfBtn').addEventListener('click', function() {
-        alert('PDF export coming soon!');
+        const band = document.getElementById('bandSelect').value;
+        const lna = document.getElementById('lnaSelect').value;
+        const port = document.getElementById('portSelect').value;
+        const sessionId = {{ session.id }};
+
+        // Open PDF export URL in new tab (triggers download)
+        const url = `/rf-analyzer/api/export-pdf/${sessionId}/?band=${band}&lna=${lna}&port=${port}`;
+        window.open(url, '_blank');
+    });
+
+    // Full Report PDF Export button
+    document.getElementById('exportFullReportPdfBtn').addEventListener('click', function() {
+        const sessionId = {{ session.id }};
+        const button = this;
+
+        // Disable button and show loading
+        button.disabled = true;
+        button.innerHTML = 'Generating PDF... Please wait (may take 5-15 minutes)';
+
+        // Trigger download via fetch to track completion
+        const url = `/rf-analyzer/api/export-full-report-pdf/${sessionId}/`;
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) throw new Error('Generation failed');
+                return response.blob();
+            })
+            .then(blob => {
+                // Create download link
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = `full_report_${sessionId}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(downloadUrl);
+                a.remove();
+
+                // Success feedback
+                button.innerHTML = 'PDF Generated!';
+                setTimeout(function() {
+                    button.disabled = false;
+                    button.innerHTML = '📑 Full Report PDF';
+                }, 3000);
+            })
+            .catch(error => {
+                console.error('PDF generation error:', error);
+                button.innerHTML = 'Generation Failed';
+                setTimeout(function() {
+                    button.disabled = false;
+                    button.innerHTML = '📑 Full Report PDF';
+                }, 3000);
+            });
+        
+        // Open Full Report PDF export URL in new tab
+        const url = `/rf-analyzer/api/export-full-report-pdf/${sessionId}/`;
+        const downloadWindow = window.open(url, '_blank');
+        
+        // Re-enable button after 3 seconds
+        setTimeout(function() {
+            button.disabled = false;
+            button.innerHTML = '📑 Full Report PDF';
+        }, 3000);
     });
 
     document.getElementById('exportPptBtn').addEventListener('click', function() {
