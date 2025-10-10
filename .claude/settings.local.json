@@ -1,8 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(C:/Project/html_exporter/.venv/Scripts/python.exe -m pip install PyPDF2)",
-      "Bash(C:/Project/html_exporter/.venv/Scripts/python.exe -c \"\nfrom pathlib import Path\nimport time\ntime.sleep(2)\n\np = Path(''django_test/rf_analyzer/urls.py'')\ncontent = p.read_text(encoding=''utf-8'')\n\n# Add full report PDF URL\ncontent = content.replace(\n    \"\"path(''api/export-pdf/<int:session_id>/'', views.export_pdf, name=''export_pdf''),\"\",\n    \"\"path(''api/export-pdf/<int:session_id>/'', views.export_pdf, name=''export_pdf''),\\n    path(''api/export-full-report-pdf/<int:session_id>/'', views.export_full_report_pdf, name=''export_full_report_pdf''),\"\"\n)\n\np.write_text(content, encoding=''utf-8'')\nprint(''Added full report PDF URL'')\n\")"
+      "Bash(C:/Project/html_exporter/.venv/Scripts/python.exe:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []

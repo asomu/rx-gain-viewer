@@ -242,6 +242,9 @@ def export_full_report_pdf(request, session_id):
     """
     API endpoint: Export full report PDF with all Band/LNA/Port combinations
     """
+    import time
+    from .progress_tracker import ProgressTracker
+    
     session = get_object_or_404(MeasurementSession, id=session_id)
 
     # Get all available combinations from database
@@ -263,9 +266,25 @@ def export_full_report_pdf(request, session_id):
     # Create PDF merger
     merger = PdfMerger()
     total_pages = 0
+    total_combinations = combinations.count()
+
+    # Initialize progress tracker
+    tracker = ProgressTracker(session_id)
+    tracker.start(total_combinations, f'Full Report PDF - {session.name}')
+
+    # Log start
+    print()
+    print("=" * 60)
+    print(f"[Full Report PDF] Starting generation for session: {session.name}")
+    print(f"[Full Report PDF] Total combinations to process: {total_combinations}")
+    print(f"[Full Report PDF] Estimated time: {total_combinations * 2}-{total_combinations * 4} seconds")
+    print("=" * 60)
+    print()
+
+    start_time = time.time()
 
     # Generate PDF for each combination
-    for combo in combinations:
+    for idx, combo in enumerate(combinations, 1):
         band = combo['cfg_band']
         lna = combo['cfg_lna_gain_state']
         port = combo['cfg_active_port_1']
@@ -315,15 +334,108 @@ def export_full_report_pdf(request, session_id):
         merger.append(pdf_stream)
         total_pages += 1
 
+        # Check if task was cancelled
+        if tracker.is_cancelled():
+            print(f"[Full Report PDF] Task cancelled by user at {idx}/{total_combinations}")
+            tracker.complete(success=False, message=f'Task cancelled after processing {idx}/{total_combinations} pages')
+            return JsonResponse({'error': 'Task cancelled by user'}, status=400)
+
+        # Update progress tracker and log
+        current_item = f'{band} {lna} {port}'
+        tracker.update(idx, current_item)
+        
+        elapsed = time.time() - start_time
+        avg_time_per_page = elapsed / idx
+        remaining_pages = total_combinations - idx
+        estimated_remaining = avg_time_per_page * remaining_pages
+        print(f"[Full Report PDF] Progress: {idx}/{total_combinations} - {current_item} - Elapsed: {elapsed:.1f}s - ETA: {estimated_remaining:.1f}s")
+
     # Write merged PDF to output
     output = io.BytesIO()
     merger.write(output)
     merger.close()
     output.seek(0)
 
+    # Calculate total time
+    total_time = time.time() - start_time
+
+    # Mark progress as complete
+    tracker.complete(success=True, message=f'Generated {total_pages} pages in {int(total_time)}s')
+
+    # Log completion
+    print()
+    print("=" * 60)
+    print(f"[Full Report PDF] Generation complete!")
+    print(f"[Full Report PDF] Total pages: {total_pages}")
+    print(f"[Full Report PDF] Total time: {total_time:.1f} seconds ({total_time/60:.1f} minutes)")
+    print(f"[Full Report PDF] Average time per page: {total_time/total_pages:.1f} seconds")
+    print("=" * 60)
+    print()
+
     # Return as downloadable file
     filename = f'full_report_{session.name}_{total_pages}pages.pdf'
     response = HttpResponse(output.read(), content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
 
+    return response
+
+
+
+
+def cancel_task(request, session_id):
+    """
+    API endpoint: Cancel ongoing PDF generation task
+    """
+    from .progress_tracker import ProgressTracker
+    
+    tracker = ProgressTracker(session_id)
+    tracker.cancel()
+    
+    return JsonResponse({
+        'success': True,
+        'message': 'Task cancellation requested'
+    })
+
+def progress_stream(request, session_id):
+    """
+    SSE endpoint for real-time progress updates
+    Returns Server-Sent Events stream
+    """
+    from django.http import StreamingHttpResponse
+    from .progress_tracker import ProgressTracker
+    import json
+    import time
+
+    def event_stream():
+        """Generator function that yields SSE formatted messages"""
+        tracker = ProgressTracker(session_id)
+
+        # Keep streaming until task completes or times out
+        max_duration = 3600  # 1 hour maximum
+        check_interval = 0.5  # Check every 0.5 seconds
+        elapsed = 0
+
+        while elapsed < max_duration:
+            progress_data = tracker.get_progress()
+
+            if progress_data:
+                # Format as SSE message
+                yield f"data: {json.dumps(progress_data)}\n\n"
+
+                # Check if task is complete
+                if progress_data['status'] in ['completed', 'failed']:
+                    break
+            else:
+                # No progress data yet, send waiting message
+                yield f"data: {json.dumps({'status': 'waiting', 'message': 'Waiting for task to start...'})}\n\n"
+
+            time.sleep(check_interval)
+            elapsed += check_interval
+
+        # Send final completion message
+        yield f"data: {json.dumps({'status': 'done', 'message': 'Stream closed'})}\n\n"
+
+    response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+    response['Cache-Control'] = 'no-cache'
+    response['X-Accel-Buffering'] = 'no'  # Disable nginx buffering
     return response

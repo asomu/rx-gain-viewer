@@ -113,6 +113,38 @@
         </div>
     </div>
 </div>
+
+<!-- Progress Modal -->
+<div id="progressModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center;">
+    <div style="background: white; padding: 30px; border-radius: 10px; max-width: 600px; width: 90%;">
+        <h3 style="margin-top: 0;">Generating Full Report PDF</h3>
+
+        <!-- Progress Bar -->
+        <div style="width: 100%; background: #e0e0e0; border-radius: 10px; height: 30px; margin: 20px 0; overflow: hidden;">
+            <div id="progressBar" style="width: 0%; background: linear-gradient(90deg, #4CAF50 0%, #45a049 100%); height: 100%; transition: width 0.3s; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                <span id="progressPercent">0%</span>
+            </div>
+        </div>
+
+        <!-- Progress Info -->
+        <div id="progressInfo" style="margin: 15px 0; font-size: 14px;">
+            <div><strong>Status:</strong> <span id="progressStatus">Initializing...</span></div>
+            <div><strong>Progress:</strong> <span id="progressCurrent">0</span> / <span id="progressTotal">0</span> pages</div>
+            <div><strong>Current:</strong> <span id="progressCurrentItem">-</span></div>
+            <div><strong>Elapsed:</strong> <span id="progressElapsed">0s</span></div>
+            <div><strong>Estimated Remaining:</strong> <span id="progressETA">Calculating...</span></div>
+        </div>
+
+ <!-- Message -->
+        <div id="progressMessage" style="padding: 10px; background: #f5f5f5; border-radius: 5px; margin: 10px 0; font-size: 13px;"></div>
+
+        <!-- Buttons -->
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button id="progressCancelBtn" style="padding: 10px 20px; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">Cancel</button>
+            <button id="progressCloseBtn" style="display: none; padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">Close</button>
+        </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -186,25 +218,37 @@
         window.open(url, '_blank');
     });
 
-    // Full Report PDF Export button
+    // Full Report PDF Export button with real-time progress via SSE
     document.getElementById('exportFullReportPdfBtn').addEventListener('click', function() {
         const sessionId = {{ session.id }};
         const button = this;
 
-        // Disable button and show loading
+        // Show progress modal
+        const modal = document.getElementById('progressModal');
+        modal.style.display = 'flex';
+
+        // Reset progress UI
+        document.getElementById('progressBar').style.width = '0%';
+        document.getElementById('progressPercent').textContent = '0%';
+        document.getElementById('progressStatus').textContent = 'Starting...';
+        document.getElementById('progressCurrent').textContent = '0';
+        document.getElementById('progressTotal').textContent = '0';
+        document.getElementById('progressCurrentItem').textContent = '-';
+        document.getElementById('progressElapsed').textContent = '0s';
+        document.getElementById('progressETA').textContent = 'Calculating...';
+        document.getElementById('progressMessage').textContent = 'Initializing PDF generation...';
+        document.getElementById('progressCloseBtn').style.display = 'none';
+
+        // Disable button
         button.disabled = true;
-        button.innerHTML = 'Generating PDF... Please wait (may take 5-15 minutes)';
+        button.innerHTML = 'Generating... See progress modal';
 
-        // Trigger download via fetch to track completion
-        const url = `/rf-analyzer/api/export-full-report-pdf/${sessionId}/`;
-
-        fetch(url)
-            .then(response => {
-                if (!response.ok) throw new Error('Generation failed');
-                return response.blob();
-            })
+        // Start PDF generation in background
+        const generateUrl = `/rf-analyzer/api/export-full-report-pdf/${sessionId}/`;
+        fetch(generateUrl)
+            .then(response => response.blob())
             .then(blob => {
-                // Create download link
+                // Auto-download when complete
                 const downloadUrl = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = downloadUrl;
@@ -213,32 +257,103 @@
                 a.click();
                 window.URL.revokeObjectURL(downloadUrl);
                 a.remove();
-
-                // Success feedback
-                button.innerHTML = 'PDF Generated!';
-                setTimeout(function() {
-                    button.disabled = false;
-                    button.innerHTML = '📑 Full Report PDF';
-                }, 3000);
             })
             .catch(error => {
-                console.error('PDF generation error:', error);
-                button.innerHTML = 'Generation Failed';
-                setTimeout(function() {
-                    button.disabled = false;
-                    button.innerHTML = '📑 Full Report PDF';
-                }, 3000);
+                console.error('PDF download error:', error);
+                document.getElementById('progressMessage').textContent = 'Error downloading PDF: ' + error.message;
             });
+
+        // Connect to SSE stream for real-time updates
+        const sseUrl = `/rf-analyzer/api/progress-stream/${sessionId}/`;
+        const eventSource = new EventSource(sseUrl);
+
+        eventSource.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+
+            if (data.status === 'waiting') {
+                document.getElementById('progressStatus').textContent = 'Waiting...';
+                document.getElementById('progressMessage').textContent = data.message;
+            } else if (data.status === 'running') {
+                // Update progress bar
+                document.getElementById('progressBar').style.width = data.percentage + '%';
+                document.getElementById('progressPercent').textContent = data.percentage + '%';
+
+                // Update info
+                document.getElementById('progressStatus').textContent = 'Processing...';
+                document.getElementById('progressCurrent').textContent = data.current;
+                document.getElementById('progressTotal').textContent = data.total;
+                document.getElementById('progressCurrentItem').textContent = data.current_item;
+                document.getElementById('progressElapsed').textContent = data.elapsed_time + 's';
+                document.getElementById('progressETA').textContent = data.estimated_remaining + 's (' + Math.round(data.estimated_remaining / 60) + ' min)';
+                document.getElementById('progressMessage').textContent = data.message;
+            } else if (data.status === 'completed') {
+                // Completed
+                document.getElementById('progressBar').style.width = '100%';
+                document.getElementById('progressPercent').textContent = '100%';
+                document.getElementById('progressStatus').textContent = 'Complete!';
+                document.getElementById('progressMessage').textContent = data.message + ' - PDF download will start automatically.';
+                document.getElementById('progressCloseBtn').style.display = 'block';
+                document.getElementById('progressETA').textContent = '0s';
+
+                eventSource.close();
+
+                // Re-enable button
+                button.disabled = false;
+                button.innerHTML = '📑 Full Report PDF';
+            } else if (data.status === 'cancelled') {
+                // Cancelled
+                document.getElementById('progressStatus').textContent = 'Cancelled';
+                document.getElementById('progressMessage').textContent = data.message || 'Task cancelled by user';
+                document.getElementById('progressCloseBtn').style.display = 'block';
+                document.getElementById('progressCancelBtn').style.display = 'none';
+
+                eventSource.close();
+
+                // Re-enable button
+                button.disabled = false;
+                button.innerHTML = '📑 Full Report PDF';                
+            } else if (data.status === 'failed') {
+                // Failed
+                document.getElementById('progressStatus').textContent = 'Failed';
+                document.getElementById('progressMessage').textContent = 'Error: ' + data.message;
+                document.getElementById('progressCloseBtn').style.display = 'block';
+
+                eventSource.close();
+
+                // Re-enable button
+                button.disabled = false;
+                button.innerHTML = '📑 Full Report PDF';
+            } else if (data.status === 'done') {
+                eventSource.close();
+            }
+        };
+
+        eventSource.onerror = function(error) {
+            console.error('SSE Error:', error);
+            document.getElementById('progressMessage').textContent = 'Connection error - please refresh the page';
+            eventSource.close();
+        };
+
+        // Close modal button
+        document.getElementById('progressCloseBtn').onclick = function() {
+            modal.style.display = 'none';
+        };
         
-        // Open Full Report PDF export URL in new tab
-        const url = `/rf-analyzer/api/export-full-report-pdf/${sessionId}/`;
-        const downloadWindow = window.open(url, '_blank');
-        
-        // Re-enable button after 3 seconds
-        setTimeout(function() {
-            button.disabled = false;
-            button.innerHTML = '📑 Full Report PDF';
-        }, 3000);
+        // Cancel button
+        document.getElementById('progressCancelBtn').onclick = function() {
+            if (confirm('Are you sure you want to cancel PDF generation?')) {
+                fetch(`/rf-analyzer/api/cancel-task/${sessionId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('progressMessage').textContent = 'Cancellation requested...';
+                        document.getElementById('progressCancelBtn').disabled = true;
+                    })
+                    .catch(error => {
+                        console.error('Cancel error:', error);
+                        alert('Failed to cancel task');
+                    });
+            }
+        };        
     });
 
     document.getElementById('exportPptBtn').addEventListener('click', function() {
