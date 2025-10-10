@@ -51,11 +51,32 @@ def handle_csv_upload(request, form):
         parse_csv_to_database(measurement_file)
         measurement_file.is_parsed = True
         measurement_file.save()
-        return redirect('rf_analyzer:viewer', session_id=session.id)
+
+        # Check if it's an AJAX request (XMLHttpRequest)
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            # Return JSON response with redirect URL for AJAX
+            from django.urls import reverse
+            viewer_url = reverse('rf_analyzer:viewer', kwargs={'session_id': session.id})
+            return JsonResponse({
+                'success': True,
+                'redirect_url': viewer_url,
+                'session_id': session.id
+            })
+        else:
+            # Normal form submission - redirect
+            return redirect('rf_analyzer:viewer', session_id=session.id)
     except Exception as e:
         session.delete()
-        form.add_error('csv_file', f'Error parsing CSV: {str(e)}')
-        return render(request, 'rf_analyzer/index.html', {'form': form})
+
+        # Check if it's an AJAX request
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=400)
+        else:
+            form.add_error('csv_file', f'Error parsing CSV: {str(e)}')
+            return render(request, 'rf_analyzer/index.html', {'form': form})
 
 
 def parse_csv_to_database(measurement_file):
@@ -157,7 +178,7 @@ def get_chart_data(request, session_id):
         grid_data[ca_combo][output_port]['frequency'].append(float(point.frequency_mhz))
         grid_data[ca_combo][output_port]['gain_db'].append(float(point.gain_db))
         grid_data[ca_combo][output_port]['count'] += 1
-    
+
     # Generate Plotly figure
     fig = ChartGenerator.create_compact_grid(
         grid_data=grid_data,
@@ -439,3 +460,23 @@ def progress_stream(request, session_id):
     response['Cache-Control'] = 'no-cache'
     response['X-Accel-Buffering'] = 'no'  # Disable nginx buffering
     return response
+
+
+def delete_session(request, session_id):
+    """Delete a measurement session"""
+    try:
+        session = MeasurementSession.objects.get(id=session_id)
+        session_name = session.name
+        session.delete()  # Cascade delete will handle related files and data
+        
+        if request.htmx:
+            # HTMX request - return success message
+            return HttpResponse(f'<div class="alert alert-success">Session "{session_name}" deleted successfully</div>')
+        else:
+            # Regular request - redirect to index
+            return redirect('rf_analyzer:index')
+    except MeasurementSession.DoesNotExist:
+        if request.htmx:
+            return HttpResponse('<div class="alert alert-danger">Session not found</div>', status=404)
+        else:
+            return redirect('rf_analyzer:index')

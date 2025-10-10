@@ -269,6 +269,25 @@ class ChartGenerator:
         ca_combinations = list(grid_data.keys())
         cols = len(ca_combinations)
 
+        # 데이터가 없는 경우 빈 차트 반환
+        if cols == 0:
+            fig = go.Figure()
+            fig.add_annotation(
+                text=f"No data available for Band {band}, LNA {lna_gain_state}, Port {input_port}",
+                xref="paper", yref="paper",
+                x=0.5, y=0.5,
+                showarrow=False,
+                font=dict(size=16, color="gray")
+            )
+            fig.update_layout(
+                title=f"No Data: {band} - {lna_gain_state} - {input_port}",
+                xaxis=dict(visible=False),
+                yaxis=dict(visible=False),
+                height=400,
+                width=800
+            )
+            return fig
+
         # RX 포트 (행)
         rx_ports = ['RXOUT1', 'RXOUT2', 'RXOUT3', 'RXOUT4']
         rows = 4
@@ -337,7 +356,8 @@ class ChartGenerator:
                     col=j
                 )
 
-                # Y축 설정
+                # Y축 설정 - G5는 [-10, 10], 나머지는 [0, 20]
+                y_range = [-10, 10] if lna_gain_state == 'G5' else [0, 20]
                 fig.update_yaxes(
                     showticklabels=(j == 1),  # Only left column
                     showgrid=True,
@@ -348,7 +368,7 @@ class ChartGenerator:
                     title_standoff=15,  # Reduced spacing to make room for RXOUT labels in export
                     tickfont=dict(size=10),
                     row=i,
-                    range=[0, 20],  # Fixed Y-axis range 0-20
+                    range=y_range,
                     col=j
                 )
 
