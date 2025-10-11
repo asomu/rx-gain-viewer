@@ -3,7 +3,11 @@
     "allow": [
       "Bash(C:/Project/html_exporter/.venv/Scripts/python.exe:*)",
       "Bash(taskkill:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(cat:*)",
+      "Read(//tmp/**)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

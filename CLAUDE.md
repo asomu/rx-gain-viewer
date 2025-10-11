@@ -7,15 +7,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 📊 Project Status
 
 **Project**: RF S-parameter Analyzer for PA Module Testing
-**Stage**: Active Development - Real-time Progress Tracking Complete
+**Stage**: Active Development - Admin Dashboard Complete
 **Last Updated**: 2025-10-11
 
 ### Current Progress
 - **Phase 1 (Prototype)**: 100% ✅ Complete
 - **Phase 1.5 (CSV Support + Grid Generation)**: 100% ✅ Complete
 - **Phase 1.6 (PPT Automation)**: 80% ⏸️ Template needed
-- **Phase 2 (Django App)**: 98% ✅ Chart UI + PDF Export + Progress Tracking + Upload + Session Management complete
-- **Overall**: ~98% Complete
+- **Phase 2 (Django App)**: 99% ✅ Session Management + Chart Export + Admin Dashboard complete
+- **Overall**: ~99% Complete
 
 ---
 
@@ -40,7 +40,7 @@ html_exporter/
 │   ├── tech-stack-decision.md      # Tech stack details
 │   ├── actual-filename-format.md   # Complex filename analysis ⭐
 │   ├── quickstart.md               # Quick start guide
-│   └── session-2025-10-02.md       # Development session log
+│   └── session-*.md                # Development session logs
 │
 ├── prototype/                  # ✅ Phase 1: Working Prototype
 │   ├── parsers/
@@ -52,17 +52,18 @@ html_exporter/
 │   ├── main.py                     # CLI demo script
 │   └── demo_*.html                 # Generated demo charts (3 files)
 │
-└── django_test/                # 🚧 Phase 2: Django Web App
+└── django_test/                # ✅ Phase 2: Django Web App (99%)
     ├── manage.py
     ├── config/                     # Django project settings
     │   ├── settings.py             # ✅ HTMX, rf_analyzer configured
     │   └── urls.py                 # ✅ Routing configured
     └── rf_analyzer/                # 📱 RF Analyzer App
-        ├── models.py               # ✅ MeasurementSession, MeasurementFile
+        ├── models.py               # ✅ MeasurementSession, MeasurementFile, MeasurementData
+        ├── admin.py                # ✅ Django Admin Dashboard (NEW)
         ├── filename_parser.py      # ✅ Complex filename parser ⭐
-        ├── views.py                # ⏳ TODO
-        ├── urls.py                 # ⏳ TODO
-        └── templates/              # ⏳ TODO
+        ├── views.py                # ✅ Upload, Chart, PDF Export, Progress Tracking
+        ├── urls.py                 # ✅ All routes configured
+        └── templates/              # ✅ index.html, viewer.html with HTMX
 ```
 
 **See**: [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for detailed structure
@@ -100,68 +101,102 @@ B1[B7]@MHBIN1_ANTU&ANT1&ANT2_X@MIMO_X@TRX_B3[B7]@1_B41S@2_(G0H).s9p
 
 ---
 
-### 2. Prototype Chart Generator
+### 2. Django Admin Dashboard (NEW) ⭐
 
-**File**: `prototype/utils/chart_generator.py`
+**File**: `django_test/rf_analyzer/admin.py`
 
-**Key Methods**:
-- `create_single_chart()` - Single Gain chart
-- `create_comparison_chart()` - Overlay comparison
-- `create_grid_layout()` - NxM grid layout ⭐
-- `export_to_html()` - Save to HTML
+**Purpose**: 관리자 인터페이스로 모든 모델 관리
 
-**Integration**: Will be imported and used by Django views
+**Features**:
+
+#### MeasurementSession Admin
+- **리스트 뷰**: 이름, 사용자, 파일 개수, 데이터 포인트 개수, 생성일, 수정일
+- **필터**: 생성일, 수정일
+- **검색**: 이름, 설명, 사용자명
+- **통계**: 파일 개수, 데이터 포인트 개수 자동 계산
+
+#### MeasurementFile Admin
+- **리스트 뷰**: 파일명, 세션, 타입, Band, CA, Port, 파싱 상태, 파일 크기(KB), 업로드일
+- **필터**: 파일 타입, Band, 파싱 상태, 업로드일
+- **검색**: 파일명, 세션명, Band, CA, Port
+- **대량 작업**: "Mark as parsed/unparsed" 상태 변경
+
+#### MeasurementData Admin
+- **리스트 뷰**: 세션, Band, LNA 상태, 포트1, 포트2, RF 경로, 주파수, 게인
+- **검색**: 세션명, Band, Nplexer Bank, RF 경로
+- **대량 작업**: CSV 내보내기
+- **성능 최적화**: 페이지당 100개 항목 제한
+
+**Access**: http://127.0.0.1:8000/admin/
 
 ---
 
-### 3. SnP Parser
+### 3. Session Management (NEW) ⭐
 
-**File**: `prototype/parsers/snp_parser.py`
+**Features**:
+- **세션 정렬**: Newest, Oldest, Name (A-Z)
+- **세션 편집**: ✏️ 버튼으로 이름/설명 수정
+- **세션 삭제**: 🗑️ 버튼으로 세션 및 파일 삭제
+- **자동 날짜 표시**: "Just now", "2 hours ago", "Yesterday" 등
 
-**Technology**: scikit-rf library
+**API Endpoints**:
+- `POST /rf-analyzer/session/update/<id>/` - 세션 이름/설명 업데이트
+- `POST /rf-analyzer/session/delete/<id>/` - 세션 삭제
 
-**Key Methods**:
-- `load()` - Load Touchstone file
-- `get_gain(input_port, output_port)` - Extract S21 Gain
-- `get_return_loss(port)` - Extract S11/S22
+**Files**:
+- `templates/rf_analyzer/index.html` - UI 및 JavaScript
+- `views.py` - update_session(), delete_session()
 
 ---
 
-### 4. CSV Parser (Enhanced) ⭐ NEW
+### 4. Chart Export Options (NEW) ⭐
 
-**File**: `prototype/parsers/csv_parser.py`
-
-**Purpose**: Parse both simple CSV and consolidated measurement data (89 columns)
+**File**: `templates/rf_analyzer/viewer.html`
 
 **Supported Formats**:
-1. **Simple CSV**: frequency, gain_db format
-2. **Consolidated CSV**: 89-column format with 109K+ measurement points
+- **PNG 300 DPI** - 표준 해상도
+- **PNG 600 DPI** - 고해상도 (출판용)
+- **SVG** - 벡터 포맷 (무한 확대)
+- **PDF** - 단일 차트 PDF
 
-**Key Features**:
-- Auto-detection of CSV format
-- Active RF Path mapping (S0706 = ANT1→RXOUT1)
-- Multi-band support (22 bands: B1-B66, n70, n75, n76)
-- Multi-port support (12 port combinations)
-
-**Key Methods**:
-- `auto_detect_and_load()` - Auto-detect format and load
-- `load_consolidated()` - Load 89-column consolidated format
-- `get_data_by_filter(band, active_rf_path)` - Extract filtered data
-- `get_available_bands()` - List all bands
-- `get_available_paths(band)` - List port combinations
-- `get_band_frequency_range(band)` - Get frequency range
-
-**Example Usage**:
-```python
-parser = CsvParser('data/Bellagio_POC_Rx.csv')
-parser.load_consolidated()
-
-# Get B1 band, ANT1→RXOUT1 data
-data = parser.get_data_by_filter(band='B1', active_rf_path='S0706')
-# Returns: frequency (549 points), gain_db, port labels, etc.
+**Implementation**:
+```javascript
+function exportChart(format, dpi) {
+    if (format === 'png') {
+        const scale = dpi / 72;
+        Plotly.downloadImage(chartDiv, {
+            format: 'png',
+            width: 1920 * scale,
+            height: 1200 * scale,
+            filename: filename + `_${dpi}dpi`
+        });
+    } else if (format === 'svg') {
+        Plotly.downloadImage(chartDiv, {format: 'svg', ...});
+    } else if (format === 'pdf') {
+        window.open(`/rf-analyzer/api/export-pdf/${sessionId}/?band=...`);
+    }
+}
 ```
 
-**See**: [docs/csv-format-analysis.md](docs/csv-format-analysis.md)
+---
+
+### 5. Real-time Progress Tracking ⭐
+
+**Feature**: Server-Sent Events (SSE) based progress tracking for Full Report PDF generation
+
+**Key Features**:
+- **Real-time Updates**: Progress bar with percentage, current item, elapsed time, ETA
+- **Task Cancellation**: User can stop PDF generation mid-process
+- **Automatic Download**: PDF downloads automatically on completion
+- **Visual Feedback**: Modal dialog with smooth animations
+
+**Components**:
+1. **ProgressTracker** (`utils/progress_tracker.py`) - Cache-based state management
+2. **SSE Endpoint** (`views.py::progress_stream`) - Streams JSON updates
+3. **Cancel Endpoint** (`views.py::cancel_generation`) - Stop generation API
+4. **Progress Modal** (`viewer.html`) - EventSource API integration
+
+**See**: [docs/session-2025-10-10.md](docs/session-2025-10-10.md)
 
 ---
 
@@ -172,204 +207,19 @@ data = parser.get_data_by_filter(band='B1', active_rf_path='S0706')
 ```bash
 cd C:\Project\html_exporter
 
-# Virtual environment auto-detected by uv
-# No manual activation needed
-
 # For Django development:
 cd django_test
 ..\.venv\Scripts\python.exe manage.py runserver
 ```
 
-### Running Prototype Demo
+### Admin Access
 
 ```bash
-cd prototype
-..\.venv\Scripts\python.exe main.py
-# Generates: demo_single.html, demo_comparison.html, demo_grid.html
-```
-
----
-
-
----
-
-## 🔄 Real-time Progress Tracking (NEW) ⭐
-
-**Feature**: Server-Sent Events (SSE) based progress tracking for Full Report PDF generation
-
-**File**: [session-2025-10-10.md](docs/session-2025-10-10.md) - Complete implementation details
-
-### Key Features
-- **Real-time Updates**: Progress bar with percentage, current item, elapsed time, ETA
-- **Task Cancellation**: User can stop PDF generation mid-process
-- **Automatic Download**: PDF downloads automatically on completion
-- **Visual Feedback**: Modal dialog with smooth animations
-
-### Components
-1. **ProgressTracker** ()
-   - Cache-based state management
-   - Methods: start(), update(), complete(), cancel(), is_cancelled()
-
-2. **SSE Endpoint** ()
-   - Streams JSON updates every 0.5 seconds
-   - Format: 
-
-3. **Cancel Endpoint** ()
-   - API to stop ongoing generation
-   - URL: 
-
-4. **Progress Modal** ()
-   - EventSource API for SSE consumption
-   - Cancel button (red) and Close button (green)
-
-### Usage
-/rf-analyzer/api/progress-stream/14/
-
-**See**: [session-2025-10-10.md](docs/session-2025-10-10.md) for complete implementation details
-
-## ⏭️ Next Development Steps
-
-### Immediate (Next Session)
-
-1. **Run Migrations**
-   ```bash
-   cd django_test
-   python manage.py makemigrations
-   python manage.py migrate
-   ```
-
-2. **Create Admin Interface**
-   - Register MeasurementSession, MeasurementFile in admin.py
-   - Create superuser for testing
-
-3. **Implement Views**
-   - File upload view
-   - Auto-parsing view
-   - Chart generation view
-
-4. **Create Templates**
-   - `base.html` - Base layout
-   - `upload.html` - File upload UI
-   - `partials/grid-preview.html` - Auto-detection preview
-   - `partials/chart.html` - Chart display
-
-5. **Integrate Prototype Code**
-   - Import prototype parsers and chart generators
-   - Build data pipeline: SnP upload → Parse → Chart
-
-### Core Features (3-4 hours)
-
-6. HTMX file upload UI
-7. Auto-parsing preview with grid structure
-8. Tab navigation (Band-based)
-9. Interactive Plotly charts
-
-### Advanced Features (Optional, 2-3 hours)
-
-10. User authentication integration
-11. Measurement history
-12. PDF export
-13. Preset management
-
----
-
-## 🛠️ Technology Stack
-
-### Backend
-- **Python**: 3.12
-- **Django**: 5.2.7
-- **scikit-rf**: 1.8.0 (SnP parsing)
-- **Pandas**: 2.3.3 (data processing)
-- **NumPy**: 2.3.3 (numerical computing)
-
-### Frontend
-- **HTMX**: 1.26.0 (dynamic UI, matches existing project style)
-- **Plotly.js**: 6.3.0 (interactive charts)
-- **Alpine.js**: Optional (lightweight JS)
-
-### Development
-- **uv**: Package manager (super fast! 1.48s install)
-- **pytest**: Testing framework
-
----
-
-## 📝 Important Conventions
-
-### File Naming
-
-Measurement files follow complex patterns from test equipment:
-```
-{MainBand}[{Sub}]@{Input}_{Output}_{Config}_{CABands}_{Condition}.s{N}p
-```
-
-**Parser handles**:
-- Band extraction (for tab grouping)
-- CA condition extraction (for grid columns)
-- Port combination extraction (for grid rows)
-- Automatic grid structure detection
-
-### Grid Layout
-
-**SnP File Grid Structure**:
-- **Tabs**: One per main Band (B1, B3, B41, etc.)
-- **Rows**: Port combinations (e.g., MHBIN1→ANTU_ANT1_ANT2)
-- **Columns**: CA conditions (e.g., B3_B7_B41, B3_B7_B7)
-- **Cells**: Individual SnP file charts
-
-**Example**:
-```
-B1 Tab:
-         B3_B7_B41   B3_B7_B7
-MHBIN1→  [Chart]     [Chart]
-MHBIN2→  [Chart]     [Chart]
-```
-
-**CSV File Grid Structure** (New):
-- **Tabs**: One per Band (B1, B3, B7, B41, etc.)
-- **Rows**: Port combinations (ANT1→RXOUT1, ANT2→RXOUT1, etc.)
-- **Columns**: LNA gain states (G0_H, G0_M, G0_L) or single column
-- **Cells**: Filtered CSV data charts
-
-**Supported Port Combinations** (CSV):
-```
-ANT1 → RXOUT1 (S0706)    ANT1 → RXOUT2 (S0306)
-ANT2 → RXOUT1 (S0705)    ANT2 → RXOUT2 (S0305)
-ANTL → RXOUT1 (S0702)    ANTL → RXOUT2 (S0302)
-ANT1 → RXOUT3 (S0806)    ANT1 → RXOUT4 (S0406)
-ANT2 → RXOUT3 (S0805)    ANT2 → RXOUT4 (S0405)
-ANTL → RXOUT3 (S0802)    ANTL → RXOUT4 (S0402)
-```
-
----
-
-## 🧪 Testing
-
-### Prototype Testing
-
-```bash
-cd prototype
-python filename_parser.py  # Test parser standalone
-python main.py             # Generate demo charts
-```
-
-### CSV Parser Testing ⭐ NEW
-
-```bash
-cd prototype
-..\.venv\Scripts\python.exe test_csv_parser.py
-
-# Test Results:
-# ✓ Loaded 109,884 data points with 22 bands and 12 Active RF Paths
-# ✓ Auto-detected consolidated format
-# ✓ Extracted B1 band S0706 data: 549 points, 2110-2170 MHz
-# ✓ Tested multiple bands: B1, B3, B7, B41
-```
-
-### Django Testing
-
-```bash
+# Create superuser (if not exists)
 cd django_test
-python manage.py test rf_analyzer
+python manage.py createsuperuser
+
+# Access admin at: http://127.0.0.1:8000/admin/
 ```
 
 ---
@@ -377,193 +227,80 @@ python manage.py test rf_analyzer
 ## 📚 Key Documentation
 
 **Essential Reading**:
-1. **[docs/csv-format-analysis.md](docs/csv-format-analysis.md)** - ⭐ CSV format specification (NEW)
-2. [docs/session-2025-10-02.md](docs/session-2025-10-02.md) - Latest development session
-3. [docs/actual-filename-format.md](docs/actual-filename-format.md) - Filename parsing rules
-4. [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Complete project structure
-5. [docs/tech-stack-decision.md](docs/tech-stack-decision.md) - Architecture decisions
-
-**Quick Reference**:
-- [docs/quickstart.md](docs/quickstart.md) - Prototype usage guide
-- [docs/project-discussion.md](docs/project-discussion.md) - Requirements & Q&A
+1. [docs/csv-format-analysis.md](docs/csv-format-analysis.md) - CSV format specification
+2. [docs/session-2025-10-10.md](docs/session-2025-10-10.md) - SSE progress tracking
+3. [docs/actual-filename-format.md](docs/actual-filename-format.md) - Filename parsing
+4. [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Complete structure
 
 ---
 
-## 🎯 Development Strategy
+## ⚠️ Known Issues
 
-### Phased Approach
+### Issue 1: Claude Code Edit Tool Bug
+- **Problem**: "File has been unexpectedly modified" error on Windows
+- **Cause**: Known bug in Claude Code v1.0.111 (GitHub #7443, #7457, #7883)
+- **Workaround**: Use Bash commands (sed, cat, mv) for file modifications
+- **Status**: ⚠️ Ongoing, use Bash for all file edits
 
-**Phase 1: Prototype** ✅ (Complete)
-- Standalone Python scripts
-- Validate SnP parsing and chart generation
-- No web interface, just HTML file output
-
-**Phase 2: Django Test App** 🚧 (40% Complete)
-- Build in `django_test/` folder
-- Implement and test all features
-- Use HTMX for dynamic UI
-
-**Phase 3: Production Integration** ⏳ (Not Started)
-- Copy to existing Django project
-- Integrate with company intranet
-- Add authentication and user management
-
-### Code Reuse
-
-**Prototype → Django Integration**:
-```python
-# Django views can import prototype code
-from prototype.parsers.snp_parser import SnpParser
-from prototype.utils.chart_generator import ChartGenerator
-
-def generate_chart_view(request):
-    parser = SnpParser(file_path)
-    freq, gain = parser.get_gain(1, 2)
-    fig = ChartGenerator.create_grid_layout(...)
-    return render(request, 'chart.html', {'chart': fig.to_html()})
-```
-
-**Benefits**:
-- Tested code from prototype
-- Fast Django development
-- Separation of concerns
-
----
-
-## ⚠️ Important Notes
-
-### File Handling
-
-**Always use the filename parser**:
-```python
-from rf_analyzer.filename_parser import ComplexFilenameParser
-
-parsed = ComplexFilenameParser.parse(filename)
-if parsed and parsed['is_valid']:
-    # Use parsed metadata
-else:
-    # Handle parsing failure
-```
-
-### Django Models
-
-**MeasurementSession**: One analysis task
-- Links to User
-- Stores grid configuration as JSON
-- Groups multiple files
-
-**MeasurementFile**: Single uploaded SnP file
-- Links to MeasurementSession
-- Stores parsed metadata (band, ca_label, port_label)
-- Tracks parsing status
-
-### HTMX Patterns
-
-**File Upload**:
-```html
-<form hx-post="/rf-analyzer/upload/"
-      hx-target="#preview"
-      hx-encoding="multipart/form-data">
-  <input type="file" name="files" multiple>
-  <button>Upload</button>
-</form>
-```
-
-**Partial Updates**:
-```python
-# views.py
-if request.htmx:
-    return render(request, 'partials/grid-preview.html', context)
-return render(request, 'upload.html', context)
-```
-
----
-
-## 🐛 Known Issues
-
-### Issue 1: Windows Console Encoding
-- **Problem**: UnicodeEncodeError with emoji/Korean characters
-- **Solution**: Use English messages in console output
-- **Status**: ✅ Resolved in prototype
-
-### Issue 2: uv run Build Error
-- **Problem**: hatchling cannot find package structure
-- **Workaround**: Run Python directly: `.venv/Scripts/python.exe script.py`
-- **Status**: ✅ Workaround applied, no impact on functionality
+### Issue 2: Django Admin Distinct Error
+- **Problem**: `TypeError: Cannot create distinct fields once a slice has been taken`
+- **Cause**: list_filter on MeasurementData with large datasets
+- **Solution**: Removed list_filter, use search instead
+- **Status**: ✅ Resolved
 
 ---
 
 ## 💡 Tips for Future Development
 
-1. **Always test filename parser** with new file patterns
-2. **Use prototype code** for data processing logic
-3. **Keep grid structure** consistent across tabs
-4. **Document** any new filename patterns in `actual-filename-format.md`
-5. **Update** session logs for major changes
+1. **Use Bash commands** for file modifications due to Edit tool bug
+2. **Always test filename parser** with new file patterns
+3. **Use prototype code** for data processing logic
+4. **Keep grid structure** consistent across tabs
+5. **Document** any new filename patterns
+6. **Update** session logs for major changes
 
 ---
 
-## 🔗 Integration with Existing Django Project
+## ⏭️ Next Development Steps
 
-When ready to integrate into production:
+### Immediate (Next Session)
 
-1. **Copy `rf_analyzer` app** to existing Django project
-2. **Update settings.py** with INSTALLED_APPS, MIDDLEWARE
-3. **Update urls.py** with rf-analyzer routes
-4. **Run migrations** on production database
-5. **Copy static files** and templates
-6. **Test** file upload and parsing with real data
+1. **PPT 자동화 완성** (Phase 1.6)
+   - 템플릿 PPT 업로드 기능
+   - 426장 자동 생성 로직
+   - 진행률 표시 (SSE 재사용)
 
-**Estimated Integration Time**: 1-2 hours
-
----
-
-**Last Session**: 2025-10-02 (2 hours)
-**Next Session Priority**: Complete Django views and HTMX templates
-**Estimated Remaining Time**: 6-8 hours to MVP
+2. **최종 테스트 및 문서화**
+   - 전체 워크플로우 테스트
+   - 사용자 가이드 작성
+   - 배포 준비
 
 ---
 
-## 📊 PPT Automation (Phase 1.6) ⭐ NEW
+## 📊 Recent Updates (2025-10-11)
 
-### PptGenerator 클래스
-**File**: `prototype/utils/ppt_generator.py`
+### Session Management Enhancements
+- ✅ Session name/description editing with ✏️ button
+- ✅ Sorting by Newest, Oldest, Name (A-Z)
+- ✅ AJAX-based updates without page reload
+- ✅ Fixed sorting using data attributes
 
-**Purpose**: PowerPoint 자동 생성 (기존 템플릿 지원)
+### Chart Export Options
+- ✅ PNG export with 300 DPI and 600 DPI options
+- ✅ SVG vector export for scalable graphics
+- ✅ PDF export for single charts
+- ✅ Bootstrap dropdown menu UI
 
-**Key Features**:
-- 기존 회사 템플릿 PPT 열기
-- 슬라이드 자동 추가 (제목 + 이미지)
-- 426장 배치 생성
+### Admin Dashboard
+- ✅ Full Django admin interface for all models
+- ✅ Custom list displays with calculated fields
+- ✅ Bulk actions (mark as parsed, CSV export)
+- ✅ Search and filter capabilities
+- ✅ Performance optimized for large datasets
 
-**사용법**:
-```python
-from pathlib import Path
-from utils.ppt_generator import PptGenerator
+---
 
-# 템플릿 사용
-template = Path("company_template.pptx")
-generator = PptGenerator(template)
-
-# 슬라이드 추가
-for band, lna, port in conditions:
-    title = f"{band} {lna} {port} LNA Gain"
-    image = Path(f"{band}_{lna}_{port}.png")
-    generator.add_slide_with_image(title, image)
-
-# 저장 (템플릿 + 새 슬라이드)
-generator.save(Path("output.pptx"))
-```
-
-### 벡터 vs 래스터 이미지
-| 포맷 | 타입 | 확대 품질 | PPT 지원 | 크기 |
-|------|------|----------|----------|------|
-| PNG | 래스터 | ❌ 지글지글 | ✅ 필수 | 213 KB |
-| PDF | 벡터 | ✅ 선명 | ⚠️ 부분적 | 32 KB |
-| SVG | 벡터 | ✅ 선명 | ❌ 미지원 | 32 KB |
-
-**결론**: PPT는 PNG 필수, 벡터 품질 원하면 PDF/SVG 별도 보관
-
-**Next**: 템플릿 PPT 업로드 → 426장 자동 생성 (4-5분)
-
-**Session Log**: [docs/session-2025-10-03-part2.md](docs/session-2025-10-03-part2.md)
+**Last Session**: 2025-10-11 (2 hours)
+**Next Session Priority**: PPT 자동화 완성 (Phase 1.6)
+**Estimated Remaining Time**: 2-3 hours to full completion
+**Project Progress**: 99% Complete

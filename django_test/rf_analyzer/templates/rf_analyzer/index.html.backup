@@ -100,13 +100,15 @@
             </div>
             <div class="list-group list-group-flush" id="sessionList">
                 {% for session in recent_sessions %}
-                <div class="list-group-item" data-created="{{ session.created_at|date:'c' }}" data-name="{{ session.name|lower }}" data-session-id="{{ session.id }}">
+                <div class="list-group-item" data-created="{{ session.created_at|date:'c' }}" data-name="{{ session.name|lower }}">
                     <div class="d-flex w-100 justify-content-between align-items-start">
                         <div class="flex-grow-1">
                             <a href="{% url 'rf_analyzer:viewer' session.id %}" class="text-decoration-none">
-                                <h6 class="mb-1 session-name">{{ session.name }} <button class="btn btn-sm btn-link p-0" onclick="editSessionName({{ session.id }}); return false;" title="Edit" style="text-decoration: none;">✏️</button></h6>
+                                <h6 class="mb-1">{{ session.name }}</h6>
                             </a>
-                            <p class="mb-1 text-muted small session-description">{{ session.description|default:"" }}</p>
+                            {% if session.description %}
+                                <p class="mb-1 text-muted small">{{ session.description|truncatewords:15 }}</p>
+                            {% endif %}
                             <small class="text-muted">
                                 <span class="badge bg-secondary">{{ session.data_points.count }} data points</span>
                                 <span class="text-muted ms-2">{{ session.created_at|date:"Y-m-d H:i" }}</span>
@@ -365,46 +367,6 @@
         } else if (noResultsMsg) {
             noResultsMsg.remove();
         }
-    }
-
-    // Edit session name and description
-    function editSessionName(sessionId) {
-        const sessionItem = document.querySelector(`[data-session-id="${sessionId}"]`);
-        const nameElement = sessionItem.querySelector('.session-name');
-        const descElement = sessionItem.querySelector('.session-description');
-
-        const currentName = nameElement.textContent.trim().replace('✏️', '').trim();
-        const currentDesc = descElement.textContent.trim();
-
-        const newName = prompt('Enter new session name:', currentName);
-        if (newName === null) return;
-
-        if (!newName.trim()) {
-            alert('Session name cannot be empty');
-            return;
-        }
-
-        const newDesc = prompt('Enter new description (optional):', currentDesc);
-        if (newDesc === null) return;
-
-        const formData = new FormData();
-        formData.append('name', newName.trim());
-        formData.append('description', newDesc.trim());
-
-        fetch(`/rf-analyzer/session/update/${sessionId}/`, {
-            method: 'POST',
-            headers: {'X-CSRFToken': '{{ csrf_token }}'},
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                window.location.reload();
-            } else {
-                alert('Failed: ' + data.error);
-            }
-        })
-        .catch(error => alert('Error: ' + error));
     }
 </script>
 {% endblock %}

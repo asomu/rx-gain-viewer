@@ -480,3 +480,35 @@ def delete_session(request, session_id):
             return HttpResponse('<div class="alert alert-danger">Session not found</div>', status=404)
         else:
             return redirect('rf_analyzer:index')
+
+
+def update_session(request, session_id):
+    """Update session name and/or description"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+
+    try:
+        session = MeasurementSession.objects.get(id=session_id)
+
+        # Get new values from request
+        new_name = request.POST.get('name', '').strip()
+        new_description = request.POST.get('description', '').strip()
+
+        # Validate name
+        if not new_name:
+            return JsonResponse({'success': False, 'error': 'Name cannot be empty'}, status=400)
+
+        # Update fields
+        session.name = new_name
+        session.description = new_description
+        session.save()
+
+        return JsonResponse({
+            'success': True,
+            'name': session.name,
+            'description': session.description
+        })
+    except MeasurementSession.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Session not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

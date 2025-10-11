@@ -58,11 +58,22 @@
 
                 <hr>
 
-                <!-- Export Buttons -->
+                <!-- Export Buttons with Dropdown -->
                 <div class="d-grid gap-2">
-                    <button class="btn btn-outline-danger" id="exportPdfBtn">
-                        📄 Export PDF
-                    </button>
+                    <!-- Export Current Chart Dropdown -->
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-danger dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            📄 Export Chart
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><h6 class="dropdown-header">Format</h6></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportChart('png', 300); return false;">PNG (300 DPI)</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportChart('png', 600); return false;">PNG (600 DPI - High Quality)</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportChart('svg'); return false;">SVG (Vector)</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportChart('pdf'); return false;">PDF (Current Chart)</a></li>
+                        </ul>
+                    </div>
+
                     <button class="btn btn-outline-warning" id="exportFullReportPdfBtn">
                         📑 Full Report PDF
                     </button>
@@ -93,11 +104,6 @@
                 <h5 class="mb-0">
                     📈 Grid Chart: {{ selected_band }} / {{ selected_lna }} / {{ selected_port }}
                 </h5>
-                <div>
-                    <button class="btn btn-sm btn-outline-primary" onclick="Plotly.downloadImage('chart', {format: 'png', width: 1920, height: 1200, filename: 'grid_chart'})">
-                        💾 Save PNG
-                    </button>
-                </div>
             </div>
             <div class="card-body">
                 <!-- Chart will be loaded here -->
@@ -206,17 +212,48 @@
         select.addEventListener('change', loadChart);
     });
 
-    // PDF Export button
-    document.getElementById('exportPdfBtn').addEventListener('click', function() {
+    // Export chart with format and DPI options
+    function exportChart(format, dpi) {
+        const chartDiv = document.getElementById('chart');
+        
+        if (!chartDiv || !chartDiv.data) {
+            alert('No chart loaded. Please load a chart first.');
+            return;
+        }
+
         const band = document.getElementById('bandSelect').value;
         const lna = document.getElementById('lnaSelect').value;
         const port = document.getElementById('portSelect').value;
-        const sessionId = {{ session.id }};
+        
+        const filename = `chart_${band}_${lna}_${port}`;
 
-        // Open PDF export URL in new tab (triggers download)
-        const url = `/rf-analyzer/api/export-pdf/${sessionId}/?band=${band}&lna=${lna}&port=${port}`;
-        window.open(url, '_blank');
-    });
+        if (format === 'png') {
+            // PNG export with specified DPI
+            const scale = dpi / 72; // Default Plotly DPI is 72
+            const width = 1920 * scale;
+            const height = 1200 * scale;
+            
+            Plotly.downloadImage(chartDiv, {
+                format: 'png',
+                width: width,
+                height: height,
+                filename: filename + `_${dpi}dpi`
+            });
+        } else if (format === 'svg') {
+            // SVG export (vector, scalable)
+            Plotly.downloadImage(chartDiv, {
+                format: 'svg',
+                width: 1920,
+                height: 1200,
+                filename: filename
+            });
+        } else if (format === 'pdf') {
+            // PDF export via backend API
+            const sessionId = {{ session.id }};
+            const url = `/rf-analyzer/api/export-pdf/${sessionId}/?band=${band}&lna=${lna}&port=${port}`;
+            window.open(url, '_blank');
+        }
+    }
 
     // Full Report PDF Export button with real-time progress via SSE
     document.getElementById('exportFullReportPdfBtn').addEventListener('click', function() {
