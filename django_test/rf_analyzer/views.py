@@ -512,3 +512,168 @@ def update_session(request, session_id):
         return JsonResponse({'success': False, 'error': 'Session not found'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+def export_full_report_ppt(request, session_id):
+    """
+    API endpoint: Export full report PPT with all Band/LNA/Port combinations
+    """
+    import time
+    import tempfile
+    import shutil
+    from .progress_tracker import ProgressTracker
+    
+    session = get_object_or_404(MeasurementSession, id=session_id)
+
+    # Import PPT generator from prototype
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / 'prototype'))
+    from utils.ppt_generator import PptGenerator
+    from utils.chart_generator import ChartGenerator
+
+    # Get all available combinations from database
+    combinations = MeasurementData.objects.filter(
+        session=session
+    ).values('cfg_band', 'cfg_lna_gain_state', 'cfg_active_port_1').distinct().order_by(
+        'cfg_band', 'cfg_lna_gain_state', 'cfg_active_port_1'
+    )
+
+    if not combinations.exists():
+        return JsonResponse({'error': 'No data available'}, status=404)
+
+    total_combinations = combinations.count()
+
+    # Initialize progress tracker
+    tracker = ProgressTracker(session_id)
+    tracker.start(total_combinations, f'Full Report PPT - {session.name}')
+
+    # Log start
+    print()
+    print("=" * 60)
+    print(f"[Full Report PPT] Starting generation for session: {session.name}")
+    print(f"[Full Report PPT] Total combinations to process: {total_combinations}")
+    print(f"[Full Report PPT] Estimated time: {total_combinations * 3}-{total_combinations * 5} seconds")
+    print("=" * 60)
+    print()
+
+    start_time = time.time()
+
+    # Create temporary directory for PNG files
+    temp_dir = Path(tempfile.mkdtemp(prefix='ppt_export_'))
+    
+    try:
+        # Initialize PPT generator (no template for now)
+        ppt_gen = PptGenerator(template_path=None)
+        
+        # Generate PNG and add slide for each combination
+        for idx, combo in enumerate(combinations, 1):
+            band = combo['cfg_band']
+            lna = combo['cfg_lna_gain_state']
+            port = combo['cfg_active_port_1']
+
+            # Get grid data for this combination
+            data_points = MeasurementData.objects.filter(
+                session=session,
+                cfg_band=band,
+                cfg_lna_gain_state=lna,
+                cfg_active_port_1=port
+            ).order_by('debug_nplexer_bank', 'cfg_active_port_2', 'frequency_mhz')
+
+            # Organize into grid structure
+            grid_data = {}
+            for point in data_points:
+                ca_combo = point.debug_nplexer_bank
+                output_port = point.cfg_active_port_2
+
+                if ca_combo not in grid_data:
+                    grid_data[ca_combo] = {}
+
+                if output_port not in grid_data[ca_combo]:
+                    grid_data[ca_combo][output_port] = {
+                        'frequency': [],
+                        'gain_db': [],
+                        'count': 0
+                    }
+
+                grid_data[ca_combo][output_port]['frequency'].append(float(point.frequency_mhz))
+                grid_data[ca_combo][output_port]['gain_db'].append(float(point.gain_db))
+                grid_data[ca_combo][output_port]['count'] += 1
+
+            # Generate Plotly figure
+            fig = ChartGenerator.create_compact_grid(
+                grid_data=grid_data,
+                band=band,
+                lna_gain_state=lna,
+                input_port=port,
+                compact_size=(300, 200)
+            )
+
+            # Export to PNG (PPT requires PNG)
+            png_filename = f'{band}_{lna}_{port}.png'
+            png_path = temp_dir / png_filename
+            png_bytes = fig.to_image(format='png', width=1920, height=1200)
+            
+            with open(png_path, 'wb') as f:
+                f.write(png_bytes)
+
+            # Add slide to PPT
+            title = f'{band} {lna} {port} LNA Gain'
+            ppt_gen.add_slide_with_image(title, png_path)
+
+            # Check if task was cancelled
+            if tracker.is_cancelled():
+                print(f"[Full Report PPT] Task cancelled by user at {idx}/{total_combinations}")
+                tracker.complete(success=False, message=f'Task cancelled after processing {idx}/{total_combinations} slides')
+                shutil.rmtree(temp_dir)
+                return JsonResponse({'error': 'Task cancelled by user'}, status=400)
+
+            # Update progress tracker and log
+            current_item = f'{band} {lna} {port}'
+            tracker.update(idx, current_item)
+            
+            elapsed = time.time() - start_time
+            avg_time_per_slide = elapsed / idx
+            remaining_slides = total_combinations - idx
+            estimated_remaining = avg_time_per_slide * remaining_slides
+            print(f"[Full Report PPT] Progress: {idx}/{total_combinations} - {current_item} - Elapsed: {elapsed:.1f}s - ETA: {estimated_remaining:.1f}s")
+
+        # Save PPT to temporary file
+        output_ppt_path = temp_dir / 'full_report.pptx'
+        ppt_gen.save(output_ppt_path)
+
+        # Calculate total time
+        total_time = time.time() - start_time
+
+        # Mark progress as complete
+        tracker.complete(success=True, message=f'Generated {total_combinations} slides in {int(total_time)}s')
+
+        # Log completion
+        print()
+        print("=" * 60)
+        print(f"[Full Report PPT] Generation complete!")
+        print(f"[Full Report PPT] Total slides: {total_combinations}")
+        print(f"[Full Report PPT] Total time: {total_time:.1f} seconds ({total_time/60:.1f} minutes)")
+        print(f"[Full Report PPT] Average time per slide: {total_time/total_combinations:.1f} seconds")
+        print("=" * 60)
+        print()
+
+        # Read PPT file
+        with open(output_ppt_path, 'rb') as f:
+            ppt_data = f.read()
+
+        # Cleanup temporary directory
+        shutil.rmtree(temp_dir)
+
+        # Return as downloadable file
+        filename = f'full_report_{session.name}_{total_combinations}slides.pptx'
+        response = HttpResponse(ppt_data, content_type='application/vnd.openxmlformats-officedocument.presentationml.presentation')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+        return response
+
+    except Exception as e:
+        # Cleanup on error
+        if temp_dir.exists():
+            shutil.rmtree(temp_dir)
+        tracker.complete(success=False, message=f'Error: {str(e)}')
+        print(f"[Full Report PPT] Error: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
