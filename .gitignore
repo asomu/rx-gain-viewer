@@ -29,8 +29,6 @@ htmlcov/
 *~
 
 # Project specific
-*.snp
-*.s*p
 *.csv
 demo_*.html
 output.html
