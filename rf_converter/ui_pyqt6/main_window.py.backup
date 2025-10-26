@@ -7,7 +7,7 @@ from pathlib import Path
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGroupBox,
     QPushButton, QLabel, QRadioButton, QCheckBox, QLineEdit,
-    QProgressBar, QFileDialog, QMessageBox, QButtonGroup, QScrollArea
+    QProgressBar, QFileDialog, QMessageBox, QButtonGroup
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont, QIcon
@@ -53,12 +53,6 @@ class MainWindow(QMainWindow):
     """
     Main application window
     Provides comprehensive UI for SnP to CSV conversion
-
-    Layout Design Philosophy:
-    - Always-visible result section (no sudden layout jumps)
-    - Fixed, predictable layout height optimized for 1080p screens
-    - State-based content display (empty → converting → complete)
-    - Scroll support for content overflow
     """
 
     def __init__(self):
@@ -74,24 +68,13 @@ class MainWindow(QMainWindow):
     def setup_ui(self):
         """Initialize UI components and layouts"""
         self.setWindowTitle("RF SnP to CSV Converter")
-        # Fixed window size optimized for 1080p screens (leaves room for taskbar)
-        # Max height: 850px ensures all content visible on 1080p displays
-        self.setGeometry(100, 100, 750, 850)
-        self.setMinimumSize(750, 700)  # Minimum usable height
-        self.setMaximumSize(750, 900)  # Maximum to prevent excessive height
+        self.setMinimumSize(750, 1050)
+        self.setMinimumSize(750, 1050)
 
-        # Create scroll area for content overflow protection
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setFrameShape(QScrollArea.Shape.NoFrame)
-        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self.setCentralWidget(scroll_area)
-
-        # Content widget inside scroll area
-        content_widget = QWidget()
-        scroll_area.setWidget(content_widget)
-        main_layout = QVBoxLayout(content_widget)
+        # Central widget and main layout
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        main_layout = QVBoxLayout(central_widget)
         main_layout.setSpacing(16)
         main_layout.setContentsMargins(24, 24, 24, 24)
 
@@ -135,16 +118,13 @@ class MainWindow(QMainWindow):
         self.progress_widget.setVisible(False)
         main_layout.addWidget(self.progress_widget)
 
-        # Result section - ALWAYS VISIBLE with state-based content
-        # This ensures no layout jump when results appear
+        # Result section (initially hidden)
         self.result_widget = self.create_result_section()
+        self.result_widget.setVisible(False)
         main_layout.addWidget(self.result_widget)
 
-        # Initialize to empty state (ready to convert)
-        self.set_result_empty_state()
-
-        # Add bottom spacing to ensure buttons are always visible
-        main_layout.addSpacing(20)
+        # Add stretch at bottom to push everything up
+        main_layout.addStretch()
 
     def create_measurement_section(self):
         """Create measurement type selection group"""
@@ -210,17 +190,10 @@ class MainWindow(QMainWindow):
         return group
 
     def create_result_section(self):
-        """
-        Create result display section
-        Always visible with three states:
-        1. Empty state (before conversion): Placeholder content
-        2. Converting state (during): Progress shown elsewhere, buttons disabled
-        3. Complete state (after): Actual results with enabled buttons
-        """
+        """Create result display section"""
         group = QGroupBox("Conversion Results")
-        group.setMinimumHeight(250)
+        group.setMinimumHeight(280)
         layout = QVBoxLayout(group)
-        layout.setSpacing(12)
 
         # Result status label
         self.result_status = QLabel()
@@ -228,22 +201,17 @@ class MainWindow(QMainWindow):
         result_font.setPointSize(12)
         result_font.setBold(True)
         self.result_status.setFont(result_font)
-        self.result_status.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.result_status)
-        layout.addSpacing(8)
+        layout.addSpacing(10)
 
         # Statistics labels
         self.stats_label = QLabel()
         self.stats_label.setMinimumHeight(80)
         self.stats_label.setWordWrap(True)
-        self.stats_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.stats_label)
 
-        layout.addSpacing(8)
-
-        # Action buttons (always visible, enabled/disabled based on state)
+        # Action buttons
         button_layout = QHBoxLayout()
-        button_layout.setSpacing(12)
 
         self.open_csv_btn = QPushButton("Open CSV")
         self.open_csv_btn.setMinimumHeight(45)
@@ -266,82 +234,6 @@ class MainWindow(QMainWindow):
         layout.addLayout(button_layout)
 
         return group
-
-    def set_result_empty_state(self):
-        """
-        Set result section to empty state (before conversion)
-        Shows placeholder content to make the UI intentional, not broken
-        """
-        self.result_status.setText("Ready to Convert")
-        self.result_status.setStyleSheet("color: #95a5a6;")  # Gray for inactive state
-
-        self.stats_label.setText("Select SnP files and click START CONVERSION to begin")
-        self.stats_label.setStyleSheet("color: #7f8c8d;")
-
-        # Disable all action buttons
-        self.open_csv_btn.setEnabled(False)
-        self.open_folder_btn.setEnabled(False)
-        self.convert_more_btn.setEnabled(False)
-
-    def set_result_converting_state(self):
-        """
-        Set result section to converting state (during conversion)
-        Buttons remain disabled, shows processing status
-        """
-        self.result_status.setText("Converting...")
-        self.result_status.setStyleSheet("color: #3498db;")  # Blue for active state
-
-        self.stats_label.setText("Processing files... Please wait")
-        self.stats_label.setStyleSheet("color: #7f8c8d;")
-
-        # Keep buttons disabled during conversion
-        self.open_csv_btn.setEnabled(False)
-        self.open_folder_btn.setEnabled(False)
-        self.convert_more_btn.setEnabled(False)
-
-    def set_result_complete_state(self, result):
-        """
-        Set result section to complete state (after conversion)
-        Shows actual results and enables appropriate buttons
-        """
-        if result.success:
-            self.result_status.setText("✅ Conversion Successful!")
-            self.result_status.setStyleSheet("color: #27ae60;")  # Green for success
-
-            stats_text = f"""
-            <b>Files Processed:</b> {result.files_processed}/{result.total_files}<br>
-            <b>Rows Generated:</b> {result.rows_generated:,}<br>
-            <b>Output Size:</b> {result.output_size_kb:.1f} KB<br>
-            <b>Success Rate:</b> {result.success_rate:.1f}%
-            """
-
-            if result.has_errors:
-                stats_text += f"<br><b style='color: #e74c3c;'>Errors:</b> {len(result.errors)}"
-
-            self.stats_label.setText(stats_text)
-            self.stats_label.setStyleSheet("")
-
-            # Enable all action buttons
-            self.open_csv_btn.setEnabled(True)
-            self.open_folder_btn.setEnabled(True)
-            self.convert_more_btn.setEnabled(True)
-        else:
-            self.result_status.setText("❌ Conversion Failed")
-            self.result_status.setStyleSheet("color: #e74c3c;")  # Red for failure
-
-            stats_text = f"<b>Errors:</b> {len(result.errors)}"
-            if result.errors:
-                stats_text += "<br><br><b>Error Details:</b><br>"
-                for error in result.errors[:5]:  # Show first 5 errors
-                    stats_text += f"• {error.get('file', 'Unknown')}: {error.get('error', 'Unknown error')}<br>"
-
-            self.stats_label.setText(stats_text)
-            self.stats_label.setStyleSheet("")
-
-            # Enable only "Convert More" button on failure
-            self.open_csv_btn.setEnabled(False)
-            self.open_folder_btn.setEnabled(False)
-            self.convert_more_btn.setEnabled(True)
 
     def apply_styling(self):
         """Apply modern styling to the application"""
@@ -491,13 +383,11 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Error", f"Failed to initialize converter: {e}")
             return
 
-        # Update UI state - NO layout changes, only content updates
+        # Update UI state
         self.convert_btn.setEnabled(False)
         self.progress_widget.setVisible(True)
         self.progress_widget.reset()
-
-        # Update result section to converting state (stays visible)
-        self.set_result_converting_state()
+        self.result_widget.setVisible(False)
 
         # Create and start worker thread
         self.worker = ConversionWorker(
@@ -520,15 +410,38 @@ class MainWindow(QMainWindow):
         self.progress_widget.update_progress(percent, current, total, filename)
 
     def on_conversion_complete(self, result):
-        """
-        Handle conversion completion
-        Updates content only, no layout changes
-        """
+        """Handle conversion completion"""
         # Hide progress widget
         self.progress_widget.setVisible(False)
 
-        # Update result section to complete state (already visible)
-        self.set_result_complete_state(result)
+        # Show result widget
+        self.result_widget.setVisible(True)
+
+        # Update result display
+        if result.success:
+            self.result_status.setText("✅ Conversion Successful!")
+            self.result_status.setStyleSheet("color: #27ae60;")
+
+            stats_text = f"""
+            <b>Files Processed:</b> {result.files_processed}/{result.total_files}<br>
+            <b>Rows Generated:</b> {result.rows_generated:,}<br>
+            <b>Output Size:</b> {result.output_size_kb:.1f} KB<br>
+            <b>Success Rate:</b> {result.success_rate:.1f}%
+            """
+
+            if result.has_errors:
+                stats_text += f"<br><b style='color: #e74c3c;'>Errors:</b> {len(result.errors)}"
+        else:
+            self.result_status.setText("❌ Conversion Failed")
+            self.result_status.setStyleSheet("color: #e74c3c;")
+
+            stats_text = f"<b>Errors:</b> {len(result.errors)}"
+            if result.errors:
+                stats_text += "<br><br><b>Error Details:</b><br>"
+                for error in result.errors[:5]:  # Show first 5 errors
+                    stats_text += f"• {error.get('file', 'Unknown')}: {error.get('error', 'Unknown error')}<br>"
+
+        self.stats_label.setText(stats_text)
 
         # Re-enable conversion button
         self.convert_btn.setEnabled(True)
@@ -560,8 +473,5 @@ class MainWindow(QMainWindow):
         """Reset UI for another conversion"""
         self.file_selector.clear_files()
         self.progress_widget.reset()
-
-        # Reset to empty state (no visibility changes)
-        self.set_result_empty_state()
-
+        self.result_widget.setVisible(False)
         self.convert_btn.setEnabled(False)

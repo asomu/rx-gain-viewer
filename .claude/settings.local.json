@@ -13,7 +13,14 @@
       "Bash(wc:*)",
       "Bash(mkdir:*)",
       "Bash(\".venv/Scripts/python.exe\" -m pip install PyQt6)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(python:*)",
+      "Bash(iconv:*)",
+      "Bash(C:Projecthtml_exporter.venvScriptspython.exe main.py)",
+      "Bash(\"/c/Project/html_exporter/.venv/Scripts/python.exe\" main.py)",
+      "Bash(\"/c/Project/html_exporter/.venv/Scripts/python.exe\" -c \"from main_window import MainWindow; print(''Import successful!'')\")",
+      "Bash(\"/c/Project/html_exporter/.venv/Scripts/python.exe\" -c \"from ui_pyqt6.main_window import MainWindow; print(''Import successful!'')\")",
+      "Bash(.venv/Scripts/python.exe -m pip:*)"
     ],
     "deny": [],
     "ask": []

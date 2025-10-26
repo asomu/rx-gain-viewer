@@ -1,0 +1,137 @@
+"""
+Main Window for RF SnP to CSV Converter
+Professional PyQt6 UI with modern design
+"""
+
+from pathlib import Path
+from PyQt6.QtWidgets import (
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGroupBox,
+    QPushButton, QLabel, QRadioButton, QCheckBox, QLineEdit,
+    QProgressBar, QFileDialog, QMessageBox, QButtonGroup, QScrollArea
+)
+from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtGui import QFont, QIcon
+
+from core import ConversionService, ConversionResult
+from widgets.file_selector import FileSelector
+from widgets.progress_widget import ProgressWidget
+
+
+class ConversionWorker(QThread):
+    """
+    Worker thread for file conversion
+    Prevents UI freezing during conversion process
+    """
+
+    # Signals for thread-safe communication
+    progress_updated = pyqtSignal(int, int, str)  # current, total, filename
+    conversion_complete = pyqtSignal(object)  # ConversionResult
+
+    def __init__(self, service, snp_files, output_csv, options):
+        super().__init__()
+        self.service = service
+        self.snp_files = snp_files
+        self.output_csv = output_csv
+        self.options = options
+
+    def run(self):
+        """Execute conversion in separate thread"""
+        def progress_callback(current, total, filename):
+            self.progress_updated.emit(current, total, filename)
+
+        result = self.service.convert_files(
+            self.snp_files,
+            self.output_csv,
+            self.options,
+            progress_callback
+        )
+
+        self.conversion_complete.emit(result)
+
+
+class MainWindow(QMainWindow):
+    """
+    Main application window
+    Provides comprehensive UI for SnP to CSV conversion
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.snp_files = []
+        self.conversion_service = None
+        self.worker = None
+
+        self.setup_ui()
+        self.apply_styling()
+        self.connect_signals()
+
+    def setup_ui(self):
+        """Initialize UI components and layouts"""
+        self.setWindowTitle("RF SnP to CSV Converter")
+        # Fixed window size that fits 1080p screens with taskbar
+        self.setFixedSize(750, 900)
+
+        # Create scroll area for content overflow protection
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFrameShape(QScrollArea.Shape.NoFrame)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.setCentralWidget(scroll_area)
+
+        # Content widget inside scroll area
+        content_widget = QWidget()
+        scroll_area.setWidget(content_widget)
+        main_layout = QVBoxLayout(content_widget)
+        main_layout.setSpacing(16)
+        main_layout.setContentsMargins(24, 24, 24, 24)
+
+        # Title section
+        title_label = QLabel("RF SnP to CSV Converter")
+        title_font = QFont()
+        title_font.setPointSize(18)
+        title_font.setBold(True)
+        title_label.setFont(title_font)
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        main_layout.addWidget(title_label)
+
+        # File selection section
+        self.file_selector = FileSelector()
+        main_layout.addWidget(self.file_selector)
+        main_layout.addSpacing(15)
+
+        # Measurement type selection
+        measurement_group = self.create_measurement_section()
+        main_layout.addWidget(measurement_group)
+        main_layout.addSpacing(15)
+
+        # Options panel
+        options_group = self.create_options_section()
+        main_layout.addWidget(options_group)
+        main_layout.addSpacing(15)
+
+        # Output selection
+        output_group = self.create_output_section()
+        main_layout.addWidget(output_group)
+        main_layout.addSpacing(15)
+
+        # Conversion button
+        self.convert_btn = QPushButton("START CONVERSION")
+        self.convert_btn.setMinimumHeight(50)
+        self.convert_btn.setEnabled(False)
+        main_layout.addWidget(self.convert_btn)
+
+        # Progress display
+        self.progress_widget = ProgressWidget()
+        self.progress_widget.setVisible(False)
+        main_layout.addWidget(self.progress_widget)
+
+        # Result section (ALWAYS VISIBLE with empty state)
+        self.result_widget = self.create_result_section()
+        self.result_widget.setVisible(True)  # Always visible
+        main_layout.addWidget(self.result_widget)
+
+        # Initialize empty state
+        self.set_result_empty_state()
+
+        # No stretch - fixed, predictable layout
