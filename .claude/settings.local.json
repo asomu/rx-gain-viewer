@@ -8,7 +8,12 @@
       "Bash(cat:*)",
       "Read(//tmp/**)",
       "Bash(curl:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(head:*)",
+      "Bash(wc:*)",
+      "Bash(mkdir:*)",
+      "Bash(\".venv/Scripts/python.exe\" -m pip install PyQt6)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []
