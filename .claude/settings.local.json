@@ -23,7 +23,10 @@
       "Bash(.venv/Scripts/python.exe -m pip:*)",
       "Bash(uv sync:*)",
       "Read(//c/Python/Project/CplShow/sample/data/Alpha-1C EVB#1 25/**)",
-      "Bash(.venvScriptspython.exe rf_converterui_pyqt6main.py)"
+      "Bash(.venvScriptspython.exe rf_converterui_pyqt6main.py)",
+      "Bash(git push:*)",
+      "Bash(git log:*)",
+      "Bash(git mv:*)"
     ],
     "deny": [],
     "ask": []

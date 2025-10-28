@@ -7,13 +7,13 @@ __pycache__/
 venv/
 env/
 ENV/
-.venv
+.venv/
+*.egg-info/
+.eggs/
 
 # Distribution / packaging
 build/
 dist/
-*.egg-info/
-.eggs/
 
 # Testing
 .pytest_cache/
@@ -28,29 +28,36 @@ htmlcov/
 *.swo
 *~
 
-# Project specific
+# RF Converter specific
 *.csv
 demo_*.html
 output.html
 result.html
 
-# Django (Phase 2)
+# RF Converter logs (user data, don't commit)
+.rf_converter/
+
+# Django
 *.log
 db.sqlite3
 db.sqlite3-journal
-/static/
-/media/
+django_test/staticfiles/
+django_test/media/
 local_settings.py
 
 # OS
 .DS_Store
 Thumbs.db
 
-prototype/output/
-prototype/output_grids/
-prototype/high_quality_test/
-prototype/sample_grids/
-prototype/test_pdf_images/
+# Archive folder (old/unused code)
+archive/
+
+# Temporary output folders (if any)
+output/
+output_grids/
+high_quality_test/
+sample_grids/
+test_pdf_images/
 ppt_test/
 vector_pdf_test/
 data/
