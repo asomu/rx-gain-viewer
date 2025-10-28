@@ -6,7 +6,7 @@ echo Starting RF SnP to CSV Converter...
 echo.
 
 cd /d "%~dp0"
-"C:\Project\html_exporter\.venv\Scripts\python.exe" ui_pyqt6\main.py
+uv run ui_pyqt6\main.py
 
 if errorlevel 1 (
     echo.

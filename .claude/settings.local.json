@@ -20,7 +20,10 @@
       "Bash(\"/c/Project/html_exporter/.venv/Scripts/python.exe\" main.py)",
       "Bash(\"/c/Project/html_exporter/.venv/Scripts/python.exe\" -c \"from main_window import MainWindow; print(''Import successful!'')\")",
       "Bash(\"/c/Project/html_exporter/.venv/Scripts/python.exe\" -c \"from ui_pyqt6.main_window import MainWindow; print(''Import successful!'')\")",
-      "Bash(.venv/Scripts/python.exe -m pip:*)"
+      "Bash(.venv/Scripts/python.exe -m pip:*)",
+      "Bash(uv sync:*)",
+      "Read(//c/Python/Project/CplShow/sample/data/Alpha-1C EVB#1 25/**)",
+      "Bash(.venvScriptspython.exe rf_converterui_pyqt6main.py)"
     ],
     "deny": [],
     "ask": []

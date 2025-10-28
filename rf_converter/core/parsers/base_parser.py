@@ -20,42 +20,83 @@ class BaseMeasurementParser(ABC):
         Initialize parser
 
         Args:
-            band_config: Dictionary mapping band names to (min_freq, max_freq) tuples
-                        Example: {'B1': (2110, 2170), 'B7': (2500, 2570)}
+            band_config: Dictionary mapping band names to (uplink_range, downlink_range) tuples
+                        Example: {'B1': ((1920, 1980), (2110, 2170))}
+                        For Rx measurements, use downlink; for Tx measurements, use uplink
         """
         self.band_config = band_config or self._default_band_config()
         self.measurement_type = self.get_measurement_type()
 
     @staticmethod
     def _default_band_config() -> Dict[str, tuple]:
-        """Default LTE band configurations (MHz)"""
+        """
+        Complete 3GPP band configurations (MHz) - Based on TS 36.101
+
+        Format: 'Band': ((uplink_min, uplink_max), (downlink_min, downlink_max))
+
+        - FDD bands: Separate uplink/downlink frequencies
+        - TDD bands: Same frequency for both (uplink = downlink)
+        - GSM bands: Legacy 2G bands (GSM850, GSM900, DCS1800, PCS1900)
+
+        Usage:
+        - Rx Gain measurements: Use downlink (second tuple)
+        - Tx Power measurements: Use uplink (first tuple)
+        """
         return {
-            'B1': (2110, 2170),
-            'B2': (1930, 1990),
-            'B3': (1805, 1880),
-            'B4': (2110, 2155),
-            'B5': (869, 894),
-            'B7': (2500, 2570),
-            'B8': (925, 960),
-            'B12': (729, 746),
-            'B13': (746, 756),
-            'B14': (758, 768),
-            'B17': (734, 746),
-            'B20': (791, 821),
-            'B25': (1930, 1995),
-            'B26': (859, 894),
-            'B28': (758, 803),
-            'B29': (717, 728),
-            'B30': (2350, 2360),
-            'B38': (2570, 2620),
-            'B39': (1880, 1920),
-            'B40': (2300, 2400),
-            'B41': (2496, 2690),
-            'B42': (3400, 3600),
-            'B43': (3600, 3800),
-            'B48': (3550, 3700),
-            'B66': (2110, 2200),
-            'B71': (617, 652),
+            # ==================== GSM Bands (Legacy) ====================
+            'GSM850': ((824, 849), (869, 894)),      # Cellular (Americas)
+            'GSM900': ((890, 915), (935, 960)),      # Extended GSM (Global)
+            'DCS': ((1710, 1785), (1805, 1880)),     # DCS 1800 (Europe/Asia)
+            'PCS': ((1850, 1910), (1930, 1990)),     # PCS 1900 (Americas)
+
+            # ==================== LTE FDD Bands ====================
+            'B1': ((1920, 1980), (2110, 2170)),      # IMT (Global)
+            'B2': ((1850, 1910), (1930, 1990)),      # PCS (Americas)
+            'B3': ((1710, 1785), (1805, 1880)),      # DCS (Europe/Asia)
+            'B4': ((1710, 1755), (2110, 2155)),      # AWS-1 (Americas)
+            'B5': ((824, 849), (869, 894)),          # Cellular (Americas)
+            'B7': ((2500, 2570), (2620, 2690)),      # IMT-E (Europe/Asia)
+            'B8': ((880, 915), (925, 960)),          # Extended GSM (Global)
+            'B11': ((1427.9, 1447.9), (1475.9, 1495.9)),  # Lower PDC (Japan)
+            'B12': ((699, 716), (729, 746)),         # Lower SMH (Americas)
+            'B13': ((777, 787), (746, 756)),         # Upper SMH (Americas)
+            'B14': ((788, 798), (758, 768)),         # Upper SMH (Public Safety)
+            'B17': ((704, 716), (734, 746)),         # Lower SMH (Americas)
+            'B18': ((815, 830), (860, 875)),         # Lower 800 (Japan)
+            'B19': ((830, 845), (875, 890)),         # Upper 800 (Japan)
+            'B20': ((832, 862), (791, 821)),         # Digital Dividend (Europe)
+            'B21': ((1447.9, 1462.9), (1495.9, 1510.9)),  # Upper PDC (Japan)
+            'B25': ((1850, 1915), (1930, 1995)),     # Extended PCS (Americas)
+            'B26': ((814, 849), (859, 894)),         # Extended Cellular (Americas)
+            'B28': ((703, 748), (758, 803)),         # APT (Asia-Pacific)
+            'B30': ((2305, 2315), (2350, 2360)),     # WCS (Americas)
+            'B31': ((452.5, 457.5), (462.5, 467.5)), # NMT (South America)
+            'B65': ((1920, 2010), (2110, 2200)),     # Extended IMT (Global)
+            'B66': ((1710, 1780), (2110, 2200)),     # Extended AWS (Americas)
+            'B70': ((1695, 1710), (1995, 2020)),     # Supplementary AWS (Americas)
+            'B71': ((663, 698), (617, 652)),         # Digital Dividend (Americas)
+            'B72': ((451, 456), (461, 466)),         # PMR (Europe)
+            'B73': ((450, 455), (460, 465)),         # PMR (Asia-Pacific)
+            'B74': ((1427, 1470), (1475, 1518)),     # Lower L-Band (Global)
+            'B85': ((698, 716), (728, 746)),         # Extended Lower SMH (Americas)
+            'B87': ((410, 415), (420, 425)),         # PMR (Global)
+            'B88': ((412, 417), (422, 427)),         # PMR (Global)
+
+            # ==================== LTE TDD Bands ====================
+            # TDD bands use same frequency for uplink/downlink (time-multiplexed)
+            'B34': ((2010, 2025), (2010, 2025)),     # IMT
+            'B37': ((1910, 1930), (1910, 1930)),     # PCS
+            'B38': ((2570, 2620), (2570, 2620)),     # IMT-E
+            'B39': ((1880, 1920), (1880, 1920)),     # DCS-IMT Gap
+            'B40': ((2300, 2400), (2300, 2400)),     # S-Band (Asia)
+            'B41': ((2496, 2690), (2496, 2690)),     # BRS (Global)
+            'B42': ((3400, 3600), (3400, 3600)),     # CBRS (Global)
+            'B43': ((3600, 3800), (3600, 3800)),     # C-Band (Global)
+            'B46': ((5150, 5925), (5150, 5925)),     # U-NII (Unlicensed)
+            'B48': ((3550, 3700), (3550, 3700)),     # CBRS (Americas)
+            'B50': ((1432, 1517), (1432, 1517)),     # L-Band
+            'B51': ((1427, 1432), (1427, 1432)),     # L-Band Extension
+            'B53': ((2483.5, 2495), (2483.5, 2495)), # S-Band
         }
 
     # ========== Abstract Methods (Must Implement) ==========
@@ -122,6 +163,10 @@ class BaseMeasurementParser(ABC):
 
         Returns:
             DataFrame with CSV rows for this file
+
+        Note:
+            Subclasses (RxGainParser, TxPowerParser) automatically use
+            the correct frequency direction (rx/tx) in filter_frequency()
         """
         from .snp_reader import SnpReader
 
@@ -136,7 +181,9 @@ class BaseMeasurementParser(ABC):
         if freq_filter and auto_band:
             band = metadata.get('band')
             if band and band in self.band_config:
-                s_params_df = self.filter_frequency(s_params_df, band)
+                # Determine direction from measurement type
+                direction = 'tx' if self.measurement_type == 'tx_power' else 'rx'
+                s_params_df = self.filter_frequency(s_params_df, band, direction)
 
         # Calculate metrics
         result_df = self.calculate_metrics(s_params_df, metadata)
@@ -170,8 +217,9 @@ class BaseMeasurementParser(ABC):
             metadata['port_in'] = parts[1]  # ANT1, ANT2, etc.
 
         # Extract band and output port
-        # Pattern: B1@1, B1[B7]@2, B41@3, etc.
-        band_pattern = r'(B\d+(?:\[B\d+\])?)\@?(\d+)?'
+        # Pattern: B1@1, B1[B7]@2, B41[NA]@3, B1[MHBIN1]@1, etc.
+        # Improved: Allow any content in brackets (not just B\d+)
+        band_pattern = r'(B\d+(?:\[[^\]]+\])?)\@?(\d+)?'
         for part in parts:
             match = re.search(band_pattern, part)
             if match:
@@ -206,21 +254,40 @@ class BaseMeasurementParser(ABC):
         match = re.match(r'(B\d+)', band_str)
         return match.group(1) if match else band_str
 
-    def filter_frequency(self, df: pd.DataFrame, band: str) -> pd.DataFrame:
+    def filter_frequency(
+        self,
+        df: pd.DataFrame,
+        band: str,
+        direction: str = 'rx'
+    ) -> pd.DataFrame:
         """
         Filter DataFrame to band-specific frequency range
 
         Args:
             df: DataFrame with 'frequency' column (in MHz)
-            band: Band name (e.g., 'B1')
+            band: Band name (e.g., 'B1', 'GSM900', 'DCS', 'PCS')
+            direction: 'rx' for downlink (Rx Gain), 'tx' for uplink (Tx Power)
 
         Returns:
             Filtered DataFrame
+
+        Examples:
+            >>> # Rx Gain measurement (uses downlink)
+            >>> df_rx = parser.filter_frequency(df, 'B1', direction='rx')
+            >>> # Tx Power measurement (uses uplink)
+            >>> df_tx = parser.filter_frequency(df, 'B1', direction='tx')
         """
         if band not in self.band_config:
             return df
 
-        freq_min, freq_max = self.band_config[band]
+        # Get uplink and downlink ranges
+        uplink_range, downlink_range = self.band_config[band]
+
+        # Select appropriate range based on measurement direction
+        if direction.lower() == 'tx':
+            freq_min, freq_max = uplink_range      # Tx uses uplink
+        else:  # Default to 'rx'
+            freq_min, freq_max = downlink_range    # Rx uses downlink
 
         # Convert Hz to MHz if needed
         if df['frequency'].max() > 10000:  # Likely in Hz

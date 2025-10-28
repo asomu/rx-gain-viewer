@@ -9,10 +9,11 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QRadioButton, QCheckBox, QLineEdit,
     QProgressBar, QFileDialog, QMessageBox, QButtonGroup, QScrollArea
 )
-from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QSettings
 from PyQt6.QtGui import QFont, QIcon
 
 from core import ConversionService, ConversionResult
+from core.logger import get_logger
 from widgets.file_selector import FileSelector
 from widgets.progress_widget import ProgressWidget
 
@@ -67,18 +68,32 @@ class MainWindow(QMainWindow):
         self.conversion_service = None
         self.worker = None
 
+        # Initialize settings and logger
+        self.settings = QSettings("RF Analyzer", "RF Converter")
+        self.logger = get_logger()
+        self.logger.log_info("Application started")
+
         self.setup_ui()
         self.apply_styling()
         self.connect_signals()
 
+        # Restore last settings
+        self.restore_settings()
+
     def setup_ui(self):
         """Initialize UI components and layouts"""
         self.setWindowTitle("RF SnP to CSV Converter")
-        # Fixed window size optimized for 1080p screens (leaves room for taskbar)
-        # Max height: 850px ensures all content visible on 1080p displays
-        self.setGeometry(100, 100, 750, 850)
-        self.setMinimumSize(750, 700)  # Minimum usable height
-        self.setMaximumSize(750, 900)  # Maximum to prevent excessive height
+
+        # Set application icon
+        icon_path = Path(__file__).parent.parent / "icon.ico"
+        if icon_path.exists():
+            self.setWindowIcon(QIcon(str(icon_path)))
+
+        # Further increased window size for complete visibility (no scroll)
+        # Height: 1020px to ensure conversion result fully visible
+        self.setGeometry(100, 50, 850, 1020)
+        self.setMinimumSize(850, 980)  # Increased minimum height
+        self.setMaximumSize(850, 1050)  # Increased maximum height
 
         # Create scroll area for content overflow protection
         scroll_area = QScrollArea()
@@ -92,8 +107,8 @@ class MainWindow(QMainWindow):
         content_widget = QWidget()
         scroll_area.setWidget(content_widget)
         main_layout = QVBoxLayout(content_widget)
-        main_layout.setSpacing(16)
-        main_layout.setContentsMargins(24, 24, 24, 24)
+        main_layout.setSpacing(8)  # Reduced from 16 to 10
+        main_layout.setContentsMargins(20, 20, 20, 20)  # Reduced margins
 
         # Title section
         title_label = QLabel("RF SnP to CSV Converter")
@@ -107,22 +122,22 @@ class MainWindow(QMainWindow):
         # File selection section
         self.file_selector = FileSelector()
         main_layout.addWidget(self.file_selector)
-        main_layout.addSpacing(15)
+        main_layout.addSpacing(8)  # Reduced from 15 to 8
 
         # Measurement type selection
         measurement_group = self.create_measurement_section()
         main_layout.addWidget(measurement_group)
-        main_layout.addSpacing(15)
+        main_layout.addSpacing(8)  # Reduced from 15 to 8
 
         # Options panel
         options_group = self.create_options_section()
         main_layout.addWidget(options_group)
-        main_layout.addSpacing(15)
+        main_layout.addSpacing(8)  # Reduced from 15 to 8
 
         # Output selection
         output_group = self.create_output_section()
         main_layout.addWidget(output_group)
-        main_layout.addSpacing(15)
+        main_layout.addSpacing(10)  # Slightly more space before convert button
 
         # Conversion button
         self.convert_btn = QPushButton("START CONVERSION")
@@ -353,6 +368,7 @@ class MainWindow(QMainWindow):
 
             QGroupBox {
                 font-weight: bold;
+                font-size: 12pt;
                 border: 2px solid #dcdde1;
                 border-radius: 8px;
                 margin-top: 12px;
@@ -365,6 +381,7 @@ class MainWindow(QMainWindow):
                 subcontrol-position: top left;
                 padding: 4px 8px;
                 color: #2f3640;
+                font-size: 12pt;
             }
 
             QPushButton {
@@ -499,6 +516,9 @@ class MainWindow(QMainWindow):
         # Update result section to converting state (stays visible)
         self.set_result_converting_state()
 
+        # Log conversion start
+        self.logger.log_conversion_start(self.snp_files, output_path, options)
+
         # Create and start worker thread
         self.worker = ConversionWorker(
             self.conversion_service,
@@ -529,6 +549,9 @@ class MainWindow(QMainWindow):
 
         # Update result section to complete state (already visible)
         self.set_result_complete_state(result)
+
+        # Log conversion completion
+        self.logger.log_conversion_complete(result)
 
         # Re-enable conversion button
         self.convert_btn.setEnabled(True)
@@ -565,3 +588,62 @@ class MainWindow(QMainWindow):
         self.set_result_empty_state()
 
         self.convert_btn.setEnabled(False)
+
+    def save_settings(self):
+        """Save current settings to registry/config file"""
+        # Save checkbox states
+        self.settings.setValue("freq_filter", self.freq_filter_check.isChecked())
+        self.settings.setValue("auto_band", self.auto_band_check.isChecked())
+        self.settings.setValue("full_sweep", self.full_sweep_check.isChecked())
+
+        # Save measurement type
+        if self.rx_gain_radio.isChecked():
+            self.settings.setValue("measurement_type", "rx_gain")
+        elif self.tx_power_radio.isChecked():
+            self.settings.setValue("measurement_type", "tx_power")
+        elif self.isolation_radio.isChecked():
+            self.settings.setValue("measurement_type", "isolation")
+
+        # Save last output path
+        output_path = self.output_path_edit.text()
+        if output_path:
+            self.settings.setValue("last_output_path", output_path)
+            # Save output directory for next time
+            self.settings.setValue("last_output_dir", str(Path(output_path).parent))
+
+        self.logger.log_info("Settings saved")
+
+    def restore_settings(self):
+        """Restore settings from last session"""
+        # Restore checkbox states (default to True)
+        freq_filter = self.settings.value("freq_filter", True, type=bool)
+        auto_band = self.settings.value("auto_band", True, type=bool)
+        full_sweep = self.settings.value("full_sweep", False, type=bool)
+
+        self.freq_filter_check.setChecked(freq_filter)
+        self.auto_band_check.setChecked(auto_band)
+        self.full_sweep_check.setChecked(full_sweep)
+
+        # Restore measurement type
+        measurement_type = self.settings.value("measurement_type", "rx_gain", type=str)
+        if measurement_type == "rx_gain":
+            self.rx_gain_radio.setChecked(True)
+        elif measurement_type == "tx_power":
+            self.tx_power_radio.setChecked(True)
+        elif measurement_type == "isolation":
+            self.isolation_radio.setChecked(True)
+
+        # Restore last output directory (for file dialog)
+        last_output_dir = self.settings.value("last_output_dir", str(Path.home()), type=str)
+        if Path(last_output_dir).exists():
+            suggested_filename = f"rx_gain_{Path.home().name}.csv"
+            suggested_path = Path(last_output_dir) / suggested_filename
+            self.output_path_edit.setText(str(suggested_path))
+
+        self.logger.log_info("Settings restored")
+
+    def closeEvent(self, event):
+        """Override close event to save settings before exit"""
+        self.save_settings()
+        self.logger.log_info("Application closed")
+        event.accept()

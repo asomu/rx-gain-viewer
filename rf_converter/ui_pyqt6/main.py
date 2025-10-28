@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QIcon
 
 # Add parent directory to path for core module import
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -24,6 +25,11 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName("RF SnP to CSV Converter")
     app.setOrganizationName("RF Analyzer")
+
+    # Set application icon (for taskbar)
+    icon_path = Path(__file__).parent.parent / "icon.ico"
+    if icon_path.exists():
+        app.setWindowIcon(QIcon(str(icon_path)))
 
     # Create and show main window
     window = MainWindow()
