@@ -230,14 +230,18 @@ class BaseMeasurementParser(ABC):
                 break
 
         # Extract LNA state from parentheses
+        # Examples: (G0H) → G0_H, (G0) → G0, (G1) → G1, (G2H) → G2_H
         lna_pattern = r'\(([^)]+)\)'
         match = re.search(lna_pattern, name)
         if match:
             lna_raw = match.group(1)
-            # Convert G0H → G0_H
-            if 'H' in lna_raw or 'L' in lna_raw:
-                metadata['lna_state'] = lna_raw.replace('G', 'G').replace('H', '_H').replace('L', '_L')
+            # Convert G0H → G0_H, G0L → G0_L, G2H → G2_H, etc.
+            # Pattern: G + digit + optional H/L → G + digit + _H/_L
+            if re.match(r'G\d+[HL]', lna_raw):
+                # G0H → G0_H, G2H → G2_H, G0L → G0_L
+                metadata['lna_state'] = re.sub(r'(G\d+)([HL])', r'\1_\2', lna_raw)
             else:
+                # G0 → G0, G1 → G1 (no suffix)
                 metadata['lna_state'] = lna_raw
 
         return metadata

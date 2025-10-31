@@ -26,7 +26,10 @@
       "Bash(.venvScriptspython.exe rf_converterui_pyqt6main.py)",
       "Bash(git push:*)",
       "Bash(git log:*)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(findstr:*)",
+      "Bash(.venv/Scripts/python.exe test_lna_fix.py)",
+      "Bash(.venv/Scripts/python.exe test_real_conversion.py)"
     ],
     "deny": [],
     "ask": []
