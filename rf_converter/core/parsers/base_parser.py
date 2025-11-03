@@ -71,6 +71,7 @@ class BaseMeasurementParser(ABC):
             'B28': ((703, 748), (758, 803)),         # APT (Asia-Pacific)
             'B30': ((2305, 2315), (2350, 2360)),     # WCS (Americas)
             'B31': ((452.5, 457.5), (462.5, 467.5)), # NMT (South America)
+            'B32': ((1452, 1496), (1452, 1496)),     # L-Band SDL (Supplemental Downlink)
             'B65': ((1920, 2010), (2110, 2200)),     # Extended IMT (Global)
             'B66': ((1710, 1780), (2110, 2200)),     # Extended AWS (Americas)
             'B70': ((1695, 1710), (1995, 2020)),     # Supplementary AWS (Americas)
@@ -97,6 +98,9 @@ class BaseMeasurementParser(ABC):
             'B50': ((1432, 1517), (1432, 1517)),     # L-Band
             'B51': ((1427, 1432), (1427, 1432)),     # L-Band Extension
             'B53': ((2483.5, 2495), (2483.5, 2495)), # S-Band
+
+            # ==================== Custom/Extended Bands ====================
+            'B202': ((2483.5, 2500), (2483.5, 2500)),      # Wide-band sweep (Custom)
         }
 
     # ========== Abstract Methods (Must Implement) ==========

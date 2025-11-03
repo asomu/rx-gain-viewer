@@ -314,7 +314,7 @@ type %USERPROFILE%\.rf_converter\logs\conversion_history.json
 ## ✅ Project Completion Checklist
 
 - [x] Core SnP parsing functionality
-- [x] 48 3GPP bands with Rx/Tx separation
+- [x] 50 3GPP bands with Rx/Tx separation (B32, B202 added)
 - [x] Regional code support (NA, EU, CN, SA)
 - [x] UI optimization (no scroll required)
 - [x] Custom icon integration
@@ -323,15 +323,34 @@ type %USERPROFILE%\.rf_converter\logs\conversion_history.json
 - [x] 100% parsing success rate
 - [x] Complete documentation
 - [x] User manual (Korean)
+- [x] LNA Gain State extraction fixed
 - [x] Production ready
 
 ---
 
-**Project Status**: ✅ **PRODUCTION READY - v1.0 COMPLETE**
+## 📝 Recent Changes (v1.0.1 - 2025-11-03)
+
+### Bug Fix
+- **LNA Gain State Extraction**: Fixed regex pattern in `base_parser.py:240-245`
+  - Issue: All files showed "Unknown" for `cfg_lna_gain_state`
+  - Solution: Corrected pattern matching for G0H → G0_H, G1 → G1, etc.
+  - Files: [base_parser.py:232-245](rf_converter/core/parsers/base_parser.py#L232-L245)
+
+### New Bands
+- **B32**: 1452-1496 MHz (3GPP SDL - Supplemental Downlink)
+  - Location: [base_parser.py:74](rf_converter/core/parsers/base_parser.py#L74)
+- **B202**: 2483.5-2500 MHz (Custom band)
+  - Location: [base_parser.py:102](rf_converter/core/parsers/base_parser.py#L102)
+
+**Total Bands**: 48 → 50 ✅
+
+---
+
+**Project Status**: ✅ **PRODUCTION READY - v1.0.1**
 
 **Main Focus**: RF Converter (rf_converter/)
 **Maintenance**: Django Web App (django_test/)
 **Archived**: Prototype (archive/prototype/)
 
-**Last Updated**: 2025-10-28
+**Last Updated**: 2025-11-03
 **Next Session**: New features or enhancements as requested

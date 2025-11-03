@@ -666,7 +666,39 @@ pause
 
 ---
 
-**Project Status**: ✅ **PRODUCTION READY - v1.0 COMPLETE**
+## 📝 Recent Updates (2025-11-03)
 
-**Last Updated**: 2025-10-28
+### Bug Fix: LNA Gain State Extraction
+**Issue**: `cfg_lna_gain_state` column showed "Unknown" for all files
+**Root Cause**: Incorrect regex pattern in `base_parser.py:237-245`
+**Solution**:
+```python
+# Before (broken)
+metadata['lna_state'] = lna_raw.replace('G', 'G').replace('H', '_H')
+
+# After (fixed)
+if re.match(r'G\d+[HL]', lna_raw):
+    metadata['lna_state'] = re.sub(r'(G\d+)([HL])', r'\1_\2', lna_raw)
+```
+**Result**: G0H → G0_H, G0L → G0_L, G1 → G1 ✅
+
+### New Bands Added
+**B32** - L-Band SDL (Supplemental Downlink)
+- Frequency: 1452-1496 MHz
+- Type: Downlink only (SDL)
+- Standard: 3GPP TS 36.101
+- Use case: Carrier aggregation supplemental downlink
+
+**B202** - Custom Wide-band
+- Frequency: 2483.5-2500 MHz (adjusted from initial 400-8500 MHz)
+- Type: Custom band (non-3GPP standard)
+- Use case: Specific measurement requirements
+
+**Total Bands**: 48 → **50 bands** ✅
+
+---
+
+**Project Status**: ✅ **PRODUCTION READY - v1.0.1**
+
+**Last Updated**: 2025-11-03
 **Next Session**: Future enhancements (Tx Power, visualization) or new features as requested
