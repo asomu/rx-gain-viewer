@@ -1,0 +1,88 @@
+sheet_name: Data
+data_type: Min Data
+file_path: //cifs.tokinas03.tky.broadcom.net/LAB/Hamilton/ETIC_10L_TELE/A6A_P1_R139B_n1
+  POR sweep SEM/n1/n1_DAC_sweep
+save_path: //cifs.tokinas03.tky.broadcom.net/LAB/Hamilton/ETIC_10L_TELE/A6A_P1_R139B_n1
+  POR sweep SEM/n1/result
+sweep1_header: Drv
+sweep2_header: Main
+sweep3_header: CP
+sweep4_header: CH
+sweep_combo_items:
+- vrf_pole
+- vrf_zero
+- paramp_c2_sel
+- vrf_bias
+- vrf_complex
+- Drv
+- Main
+- CP
+aclr_spec: '-37'
+aclr_spec_checked: true
+sem0_spec: '-30'
+sem0_spec_checked: false
+sem1_spec: '-25'
+sem1_spec_checked: false
+sem2_spec: '-30'
+sem2_spec_checked: false
+sem3_spec: '-25'
+sem3_spec_checked: false
+input_info:
+  Drv:
+    col: cfg-driver_bias
+    mask: ''
+  CP:
+    col: cfg-compression-dB
+    mask: ''
+  Main:
+    col: cfg-output_bias
+    mask: ''
+  paramp_c2_sel:
+    col: cfg-register_04-value
+    mask: '[3:7]'
+  vrf_pole:
+    col: cfg-register_05-value
+    mask: '[0:3]'
+  vrf_zero:
+    col: cfg-register_06-value
+    mask: '[0:4]'
+  vrf_bias:
+    col: cfg-register_03-value
+    mask: '[6:7]'
+  vrf_complex:
+    col: cfg-register_03-value
+    mask: '[5:5]'
+target_info:
+  aclr:
+    alias: ACLR
+    col: aclr_eutra1_max-dBc.pcc_ul.HB_ASM_ANT1_Value
+    is_checked: true
+  icc:
+    alias: ICC
+    col: current_avg-mA.vbatt_Value
+    is_checked: true
+  gain:
+    alias: Gain
+    col: gain-dB.all.HB_ASM_ANT1.none._Value
+    is_checked: true
+  sem0:
+    alias: SEM0
+    col: SEM0
+    is_checked: true
+  sem1:
+    alias: SEM1
+    col: SEM0
+    is_checked: true
+  sem2:
+    alias: SEM2
+    col: SEM0
+    is_checked: true
+  sem3:
+    alias: SEM3
+    col: SEM1
+    is_checked: false
+por_info:
+  plot_x: ''
+  plot_y: ''
+  color: ko
+single_plot: false
