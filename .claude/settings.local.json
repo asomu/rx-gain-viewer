@@ -31,7 +31,8 @@
       "Bash(.venv/Scripts/python.exe test_lna_fix.py)",
       "Bash(.venv/Scripts/python.exe test_real_conversion.py)",
       "Bash(tail:*)",
-      "Bash(.venv/Scripts/python.exe:*)"
+      "Bash(.venv/Scripts/python.exe:*)",
+      "Bash(.venvScriptspython.exe -m pytest rf_converter/tests/test_band_mapper.py -v)"
     ],
     "deny": [],
     "ask": []

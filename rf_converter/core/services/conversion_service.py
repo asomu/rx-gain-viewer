@@ -81,6 +81,7 @@ class ConversionService:
                 - freq_filter (bool): Apply frequency filtering (default: True)
                 - auto_band (bool): Auto-detect band from filename (default: True)
                 - full_sweep (bool): Include full frequency sweep (default: False)
+                - band_mapper: Optional BandMapper instance for notation translation
             progress_callback: Optional callback function(current, total, filename)
                               Called after each file to report progress
 
@@ -90,6 +91,7 @@ class ConversionService:
         options = options or {}
         freq_filter = options.get('freq_filter', True)
         auto_band = options.get('auto_band', True)
+        band_mapper = options.get('band_mapper', None)
 
         writer = CsvWriter(output_csv)
         errors = []
@@ -97,11 +99,12 @@ class ConversionService:
 
         for idx, snp_file in enumerate(snp_files, 1):
             try:
-                # Parse single file
+                # Parse single file (with optional band mapper)
                 df = self.parser.parse_file(
                     snp_file,
                     freq_filter=freq_filter,
-                    auto_band=auto_band
+                    auto_band=auto_band,
+                    mapper=band_mapper
                 )
 
                 # Append to writer buffer

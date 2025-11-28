@@ -1,0 +1,12 @@
+{
+  "version": "1.0",
+  "description": "Alpha-1C EVB#1 N-plexer bank mappings for B41 regional variants",
+  "project": "Alpha-1C EVB#1",
+  "created_date": "2025-11-27",
+  "mappings": {
+    "B41[CN]": "34_39+41",
+    "B41[SA]": "41",
+    "B41[NA]": "25_30_66+41",
+    "B41[EU]": "41_EU"
+  }
+}

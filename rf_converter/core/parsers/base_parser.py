@@ -155,7 +155,8 @@ class BaseMeasurementParser(ABC):
         self,
         snp_file: Path,
         freq_filter: bool = True,
-        auto_band: bool = True
+        auto_band: bool = True,
+        mapper=None
     ) -> pd.DataFrame:
         """
         Parse single SnP file to DataFrame
@@ -164,6 +165,7 @@ class BaseMeasurementParser(ABC):
             snp_file: Path to .s2p file
             freq_filter: Apply band-specific frequency filtering
             auto_band: Auto-detect band from filename
+            mapper: Optional BandMapper instance for notation translation
 
         Returns:
             DataFrame with CSV rows for this file
@@ -189,8 +191,8 @@ class BaseMeasurementParser(ABC):
                 direction = 'tx' if self.measurement_type == 'tx_power' else 'rx'
                 s_params_df = self.filter_frequency(s_params_df, band, direction)
 
-        # Calculate metrics
-        result_df = self.calculate_metrics(s_params_df, metadata)
+        # Calculate metrics (pass mapper to subclass)
+        result_df = self.calculate_metrics(s_params_df, metadata, mapper=mapper)
 
         return result_df
 

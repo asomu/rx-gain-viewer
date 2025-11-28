@@ -2,7 +2,7 @@
 
 import pandas as pd
 import numpy as np
-from typing import Dict, List
+from typing import Dict, List, Optional
 from .base_parser import BaseMeasurementParser
 
 
@@ -23,7 +23,7 @@ class RxGainParser(BaseMeasurementParser):
     def get_required_s_parameters(self) -> List[str]:
         return ['S21', 'S12', 'S11', 'S22']
 
-    def calculate_metrics(self, s_params_df: pd.DataFrame, metadata: Dict) -> pd.DataFrame:
+    def calculate_metrics(self, s_params_df: pd.DataFrame, metadata: Dict, mapper=None) -> pd.DataFrame:
         """
         Calculate Rx Gain metrics from S-parameters
 
@@ -31,6 +31,11 @@ class RxGainParser(BaseMeasurementParser):
         S12: Reverse transmission (Isolation)
         S11: Input reflection (Return Loss)
         S22: Output reflection (Return Loss)
+
+        Args:
+            s_params_df: DataFrame with S-parameter data
+            metadata: File metadata (band, ports, etc.)
+            mapper: Optional BandMapper instance for notation translation
         """
         df = s_params_df.copy()
 
@@ -64,7 +69,16 @@ class RxGainParser(BaseMeasurementParser):
         df['cfg_lna_gain_state'] = metadata.get('lna_state', 'Unknown')
         df['cfg_active_port_1'] = metadata.get('port_in', 'ANT1')
         df['cfg_active_port_2'] = metadata.get('port_out', 'RXOUT1')
-        df['ca_config'] = metadata.get('ca_config', metadata.get('band', ''))
+
+        # Original band notation from filename
+        ca_config = metadata.get('ca_config', metadata.get('band', ''))
+        df['ca_config'] = ca_config
+
+        # Mapped N-plexer bank notation (if mapper enabled)
+        if mapper and mapper.is_loaded():
+            df['debug-nplexer_bank'] = mapper.map(ca_config)
+        else:
+            df['debug-nplexer_bank'] = ''  # Empty if mapping not enabled
 
         # Rename frequency column
         df = df.rename(columns={'frequency': 'Frequency'})
@@ -96,7 +110,8 @@ class RxGainParser(BaseMeasurementParser):
             'cfg_lna_gain_state',
             'cfg_active_port_1',
             'cfg_active_port_2',
-            'ca_config',
+            'ca_config',              # Original band notation from filename
+            'debug-nplexer_bank',     # Mapped N-plexer bank notation (optional)
             # Additional columns from Bellagio format can be added here:
             # 'Isolation(B3):S0306 (dB)',
             # 'RL ANT1 to ANT1 (dB)',

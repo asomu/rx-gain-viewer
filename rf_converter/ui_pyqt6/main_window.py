@@ -14,6 +14,7 @@ from PyQt6.QtGui import QFont, QIcon
 
 from core import ConversionService, ConversionResult
 from core.logger import get_logger
+from core.band_mapper import BandMapper
 from widgets.file_selector import FileSelector
 from widgets.progress_widget import ProgressWidget
 
@@ -72,6 +73,9 @@ class MainWindow(QMainWindow):
         self.settings = QSettings("RF Analyzer", "RF Converter")
         self.logger = get_logger()
         self.logger.log_info("Application started")
+
+        # Initialize BandMapper singleton
+        self.band_mapper = BandMapper.get_instance()
 
         self.setup_ui()
         self.apply_styling()
@@ -133,6 +137,11 @@ class MainWindow(QMainWindow):
         options_group = self.create_options_section()
         main_layout.addWidget(options_group)
         main_layout.addSpacing(8)  # Reduced from 15 to 8
+
+        # Band Mapping section (NEW)
+        mapping_group = self.create_mapping_section()
+        main_layout.addWidget(mapping_group)
+        main_layout.addSpacing(8)
 
         # Output selection
         output_group = self.create_output_section()
@@ -204,6 +213,45 @@ class MainWindow(QMainWindow):
         self.full_sweep_check = QCheckBox("Include full frequency sweep")
         self.full_sweep_check.setChecked(False)
         layout.addWidget(self.full_sweep_check)
+
+        return group
+
+    def create_mapping_section(self):
+        """Create band notation mapping section"""
+        group = QGroupBox("Band Mapping (Optional)")
+        layout = QVBoxLayout(group)
+
+        # Enable mapping checkbox
+        self.mapping_enabled_check = QCheckBox("Enable N-plexer bank mapping")
+        self.mapping_enabled_check.setToolTip(
+            "Convert filename band notation (e.g., B41[CN]) to\n"
+            "N-plexer bank notation (e.g., 34_39+41) using JSON mapping file"
+        )
+        self.mapping_enabled_check.setChecked(False)
+        self.mapping_enabled_check.stateChanged.connect(self.on_mapping_enabled_changed)
+        layout.addWidget(self.mapping_enabled_check)
+
+        # File selector row
+        file_layout = QHBoxLayout()
+
+        self.mapping_file_edit = QLineEdit()
+        self.mapping_file_edit.setPlaceholderText("Select JSON mapping file...")
+        self.mapping_file_edit.setEnabled(False)
+        self.mapping_file_edit.textChanged.connect(self.on_mapping_file_changed)
+        file_layout.addWidget(self.mapping_file_edit)
+
+        self.mapping_browse_btn = QPushButton("Browse...")
+        self.mapping_browse_btn.setEnabled(False)
+        self.mapping_browse_btn.clicked.connect(self.browse_mapping_file)
+        file_layout.addWidget(self.mapping_browse_btn)
+
+        layout.addLayout(file_layout)
+
+        # Status label
+        self.mapping_status_label = QLabel("Disabled")
+        self.mapping_status_label.setStyleSheet("color: gray; font-style: italic;")
+        self.mapping_status_label.setWordWrap(True)
+        layout.addWidget(self.mapping_status_label)
 
         return group
 
@@ -469,6 +517,78 @@ class MainWindow(QMainWindow):
         if file_path:
             self.output_path_edit.setText(file_path)
 
+    def browse_mapping_file(self):
+        """Open file dialog to select JSON mapping file"""
+        # Default to mappings directory if exists
+        default_dir = Path(__file__).parent.parent / "core" / "mappings"
+        if not default_dir.exists():
+            default_dir = Path.home()
+
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select JSON Mapping File",
+            str(default_dir),
+            "JSON Files (*.json);;All Files (*)"
+        )
+
+        if file_path:
+            self.mapping_file_edit.setText(file_path)
+            # Load mapping immediately
+            self.load_mapping_file(file_path)
+
+    def on_mapping_enabled_changed(self, state):
+        """Handle mapping enable/disable checkbox state change"""
+        is_enabled = (state == Qt.CheckState.Checked.value)
+
+        # Enable/disable controls
+        self.mapping_file_edit.setEnabled(is_enabled)
+        self.mapping_browse_btn.setEnabled(is_enabled)
+
+        if is_enabled:
+            # If file already specified, try to load it
+            file_path = self.mapping_file_edit.text()
+            if file_path:
+                self.load_mapping_file(file_path)
+            else:
+                self.mapping_status_label.setText("⚠️ Please select a mapping file")
+                self.mapping_status_label.setStyleSheet("color: orange; font-style: italic;")
+        else:
+            # Clear mapping
+            self.band_mapper.clear()
+            self.mapping_status_label.setText("Disabled")
+            self.mapping_status_label.setStyleSheet("color: gray; font-style: italic;")
+            self.logger.log_info("Band mapping disabled")
+
+    def on_mapping_file_changed(self, file_path):
+        """Handle mapping file path text change"""
+        # This is called when text is changed programmatically or by user typing
+        # We only auto-load when Browse button is used (handled in browse_mapping_file)
+        pass
+
+    def load_mapping_file(self, file_path):
+        """Load mapping file and update status"""
+        if not file_path:
+            return
+
+        success, message = self.band_mapper.load_mapping(file_path)
+
+        if success:
+            self.mapping_status_label.setText(message)
+            self.mapping_status_label.setStyleSheet("color: green; font-weight: bold;")
+            self.logger.log_info(f"Band mapping loaded: {message}")
+        else:
+            self.mapping_status_label.setText(message)
+            self.mapping_status_label.setStyleSheet("color: red; font-weight: bold;")
+            self.logger.log_error(f"Band mapping failed: {message}")
+
+            # Show error dialog
+            QMessageBox.warning(
+                self,
+                "Mapping Load Error",
+                f"Failed to load mapping file:\n\n{message}\n\n"
+                "Please check the file format and try again."
+            )
+
     def on_files_changed(self, files, total_size_mb):
         """Handle file selection changes"""
         self.snp_files = files
@@ -495,7 +615,8 @@ class MainWindow(QMainWindow):
         options = {
             'freq_filter': self.freq_filter_check.isChecked(),
             'auto_band': self.auto_band_check.isChecked(),
-            'full_sweep': self.full_sweep_check.isChecked()
+            'full_sweep': self.full_sweep_check.isChecked(),
+            'band_mapper': self.band_mapper if self.mapping_enabled_check.isChecked() else None
         }
 
         # Get measurement type
@@ -611,6 +732,10 @@ class MainWindow(QMainWindow):
             # Save output directory for next time
             self.settings.setValue("last_output_dir", str(Path(output_path).parent))
 
+        # Save band mapping settings
+        self.settings.setValue("mapping_enabled", self.mapping_enabled_check.isChecked())
+        self.settings.setValue("mapping_file_path", self.mapping_file_edit.text())
+
         self.logger.log_info("Settings saved")
 
     def restore_settings(self):
@@ -639,6 +764,17 @@ class MainWindow(QMainWindow):
             suggested_filename = f"rx_gain_{Path.home().name}.csv"
             suggested_path = Path(last_output_dir) / suggested_filename
             self.output_path_edit.setText(str(suggested_path))
+
+        # Restore band mapping settings
+        mapping_enabled = self.settings.value("mapping_enabled", False, type=bool)
+        mapping_file_path = self.settings.value("mapping_file_path", "", type=str)
+
+        self.mapping_enabled_check.setChecked(mapping_enabled)
+        if mapping_file_path:
+            self.mapping_file_edit.setText(mapping_file_path)
+            # Try to load the mapping file if enabled
+            if mapping_enabled and Path(mapping_file_path).exists():
+                self.load_mapping_file(mapping_file_path)
 
         self.logger.log_info("Settings restored")
 
