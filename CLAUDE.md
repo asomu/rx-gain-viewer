@@ -8,8 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Project**: RF Converter - S-parameter to CSV Converter
 **Focus**: Desktop application for RF measurement data conversion
-**Stage**: Production Ready - v1.0
-**Last Updated**: 2025-10-28
+**Stage**: Production Ready - v1.1 (Band Mapping System)
+**Last Updated**: 2025-11-27
 
 ---
 
@@ -17,13 +17,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Main Project: RF Converter ⭐ (100% Complete)
 **Location**: `rf_converter/`
-**Status**: ✅ Production Ready v1.0
+**Status**: ✅ Production Ready v1.1
 **Purpose**: PyQt6 desktop app for converting SnP files to CSV with 3GPP band filtering
 
 **Key Features**:
-- 48 3GPP bands (LTE/5G NR/GSM) with Rx/Tx separation
+- 50 3GPP bands (LTE/5G NR/GSM) with Rx/Tx separation (B32, B202 added)
 - Automatic band detection from filenames
 - Regional code support (B41[NA], B41[EU], etc.)
+- **Band notation mapping system** (Phase 5 - NEW)
 - Batch conversion with real-time progress
 - Settings persistence and logging
 - Custom RF-themed icon
@@ -55,16 +56,24 @@ rx-gain-viewer/
 ├── rf_converter/                   ⭐ MAIN PROJECT
 │   ├── core/
 │   │   ├── parsers/
-│   │   │   ├── base_parser.py      # 48 band configs + filtering
+│   │   │   ├── base_parser.py      # 50 band configs + filtering
 │   │   │   ├── rx_gain_parser.py   # Rx Gain measurement
 │   │   │   ├── rx_sens_parser.py   # Rx Sensitivity
 │   │   │   └── tx_parser.py        # Tx Power (template)
+│   │   ├── band_mapper.py          # Band notation mapping (NEW)
+│   │   ├── mappings/               # Mapping config files (NEW)
+│   │   │   ├── README.txt
+│   │   │   ├── example_alpha1c_evb1.json
+│   │   │   ├── example_basic.json
+│   │   │   └── example_comprehensive.json
 │   │   └── logger.py               # Logging system
 │   ├── ui_pyqt6/
 │   │   ├── main.py                 # Entry point
 │   │   └── main_window.py          # Main window (850x1020)
 │   ├── tests/                      # Test files
 │   │   ├── test_band_filtering.py
+│   │   ├── test_band_mapper.py     # BandMapper tests (NEW)
+│   │   ├── test_mapping_integration.py  # Integration tests (NEW)
 │   │   ├── test_filename_parsing.py
 │   │   └── test_real_files.py
 │   ├── icon.ico                    # Custom RF icon
@@ -93,10 +102,16 @@ rx-gain-viewer/
 ### RF Converter Core Files
 
 **`rf_converter/core/parsers/base_parser.py`** (Lines 24-90)
-- **Purpose**: 48 3GPP band configurations with Rx/Tx frequency separation
+- **Purpose**: 50 3GPP band configurations with Rx/Tx frequency separation
 - **Format**: `'Band': ((uplink_min, uplink_max), (downlink_min, downlink_max))`
 - **Key Method**: `filter_frequency(df, band, direction='rx')` - Filter by band and Rx/Tx direction
 - **Why Important**: Core of frequency filtering logic, supports future Tx Power feature
+
+**`rf_converter/core/band_mapper.py`** (NEW - Phase 5)
+- **Purpose**: Optional band notation mapping system (filename → N-plexer bank)
+- **Pattern**: Singleton with O(1) lookup, JSON config files
+- **Key Method**: `map(original: str) -> str` - Translate band notation
+- **Why Important**: Enables comparison between different site notation systems
 
 **`rf_converter/core/logger.py`**
 - **Purpose**: Conversion history logging and application event tracking
@@ -106,7 +121,7 @@ rx-gain-viewer/
 **`rf_converter/ui_pyqt6/main_window.py`**
 - **Purpose**: Main application window (850x1020, optimized for no-scroll)
 - **Settings**: QSettings integration for auto-save/restore
-- **Features**: Drag & drop, real-time progress, quick access buttons
+- **Features**: Drag & drop, real-time progress, quick access buttons, band mapping (NEW)
 - **Why Important**: Main user interface with all features integrated
 
 ### Documentation Files
@@ -223,18 +238,27 @@ rx-gain-viewer/
 
 ## 🎯 Future Roadmap
 
-### Phase 5: Tx Power Feature (Planned)
+### Phase 5: Band Mapping System ✅ COMPLETE
+- [x] BandMapper singleton class (300 lines)
+- [x] JSON mapping file system
+- [x] GUI integration (checkbox + file selector + status)
+- [x] Unit tests (25 tests, 100% pass)
+- [x] Integration tests (5 tests, 100% pass)
+- [x] Example mapping files (3 files)
+- [x] Documentation and user guide
+
+### Phase 6: Tx Power Feature (Planned)
 - [ ] Implement `tx_parser.py` (currently template)
 - [ ] Add Tx Power radio button to UI
 - [ ] Test uplink frequency filtering
 - [ ] Validate against Tx Power measurement data
 
-### Phase 6: Data Visualization (Potential)
+### Phase 7: Data Visualization (Potential)
 - [ ] Matplotlib integration for inline plotting
 - [ ] Export to PNG/PDF with graphs
 - [ ] Comparison overlay (Our Measurement vs Client Data)
 
-### Phase 7: Advanced Analysis (Potential)
+### Phase 8: Advanced Analysis (Potential)
 - [ ] S-parameter quality metrics
 - [ ] Frequency response analysis
 - [ ] Band edge detection
@@ -288,13 +312,14 @@ uv run rf_converter/ui_pyqt6/main.py
 
 ### Run Tests
 ```bash
-# All tests
-python rf_converter/tests/test_band_filtering.py
-python rf_converter/tests/test_filename_parsing.py
-python rf_converter/tests/test_real_files.py
+# Band filtering and parsing tests
+.venv\Scripts\python.exe rf_converter/tests/test_band_filtering.py
+.venv\Scripts\python.exe rf_converter/tests/test_filename_parsing.py
+.venv\Scripts\python.exe rf_converter/tests/test_real_files.py
 
-# With UV
-uv run rf_converter/tests/test_band_filtering.py
+# Band mapper tests (NEW)
+.venv\Scripts\python.exe rf_converter/tests/test_band_mapper.py
+.venv\Scripts\python.exe rf_converter/tests/test_mapping_integration.py
 ```
 
 ### View Logs
@@ -316,6 +341,7 @@ type %USERPROFILE%\.rf_converter\logs\conversion_history.json
 - [x] Core SnP parsing functionality
 - [x] 50 3GPP bands with Rx/Tx separation (B32, B202 added)
 - [x] Regional code support (NA, EU, CN, SA)
+- [x] Band notation mapping system (Phase 5)
 - [x] UI optimization (no scroll required)
 - [x] Custom icon integration
 - [x] Logging system
@@ -328,25 +354,31 @@ type %USERPROFILE%\.rf_converter\logs\conversion_history.json
 
 ---
 
-## 📝 Recent Changes (v1.0.1 - 2025-11-03)
+## 📝 Recent Changes
 
-### Bug Fix
-- **LNA Gain State Extraction**: Fixed regex pattern in `base_parser.py:240-245`
-  - Issue: All files showed "Unknown" for `cfg_lna_gain_state`
-  - Solution: Corrected pattern matching for G0H → G0_H, G1 → G1, etc.
-  - Files: [base_parser.py:232-245](rf_converter/core/parsers/base_parser.py#L232-L245)
+### v1.1 - 2025-11-27 (Band Mapping System)
 
-### New Bands
-- **B32**: 1452-1496 MHz (3GPP SDL - Supplemental Downlink)
-  - Location: [base_parser.py:74](rf_converter/core/parsers/base_parser.py#L74)
+**Phase 5 Complete**: Band notation mapping system
+- **BandMapper class**: Singleton with O(1) lookup, JSON configuration
+- **GUI integration**: Checkbox + file selector + status display
+- **CSV output**: Added `debug-nplexer_bank` column for mapped notation
+- **Test coverage**: 25 unit tests + 5 integration tests (100% pass)
+- **Example files**: 3 mapping templates with comprehensive documentation
+
+**Problem Solved**: Different sites use different notation for same bands (B41[CN] vs 34_39+41)
+
+**Files**: [session-2025-11-27-band-mapping.md](docs/rf-converter/sessions/session-2025-11-27-band-mapping.md)
+
+### v1.0.1 - 2025-11-03 (Bug Fix + New Bands)
+
+- **LNA Gain State Extraction**: Fixed regex pattern (G0H → G0_H, G1 → G1)
+- **B32**: 1452-1496 MHz (3GPP SDL)
 - **B202**: 2483.5-2500 MHz (Custom band)
-  - Location: [base_parser.py:102](rf_converter/core/parsers/base_parser.py#L102)
-
-**Total Bands**: 48 → 50 ✅
+- **Total Bands**: 48 → 50 ✅
 
 ---
 
-**Project Status**: ✅ **PRODUCTION READY - v1.0.1**
+**Project Status**: ✅ **PRODUCTION READY - v1.1**
 
 **Main Focus**: RF Converter (rf_converter/)
 **Maintenance**: Django Web App (django_test/)
