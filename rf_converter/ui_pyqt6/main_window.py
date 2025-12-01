@@ -10,13 +10,20 @@ from PyQt6.QtWidgets import (
     QProgressBar, QFileDialog, QMessageBox, QButtonGroup, QScrollArea
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QSettings
-from PyQt6.QtGui import QFont, QIcon
+from PyQt6.QtGui import QFont
 
-from core import ConversionService, ConversionResult
-from core.logger import get_logger
-from core.band_mapper import BandMapper
-from widgets.file_selector import FileSelector
-from widgets.progress_widget import ProgressWidget
+from rf_converter.core import ConversionService, ConversionResult
+from rf_converter.core.logger import get_logger
+from rf_converter.core.band_mapper import BandMapper
+from rf_converter.ui_pyqt6.widgets.file_selector import FileSelector
+from rf_converter.ui_pyqt6.widgets.progress_widget import ProgressWidget
+
+# Import version from package
+try:
+    from rf_converter import __version__, __app_name__
+except ImportError:
+    __version__ = "1.1.0"
+    __app_name__ = "RF Converter"
 
 
 class ConversionWorker(QThread):
@@ -86,12 +93,25 @@ class MainWindow(QMainWindow):
 
     def setup_ui(self):
         """Initialize UI components and layouts"""
-        self.setWindowTitle("RF SnP to CSV Converter")
+        self.setWindowTitle(f"{__app_name__} v{__version__}")
 
-        # Set application icon
-        icon_path = Path(__file__).parent.parent / "icon.ico"
+        # Set window icon - must be set here for PyInstaller taskbar icon support
+        # Handle both development (source) and PyInstaller (bundled) paths
+        import sys
+        from pathlib import Path
+        from PyQt6.QtGui import QIcon
+
+        if getattr(sys, 'frozen', False):
+            # Running as PyInstaller bundle - icon is at _MEIPASS root
+            icon_path = Path(sys._MEIPASS) / "icon.ico"
+        else:
+            # Running from source - icon is in rf_converter/
+            icon_path = Path(__file__).parent.parent / "icon.ico"
+
         if icon_path.exists():
-            self.setWindowIcon(QIcon(str(icon_path)))
+            # Store as instance variable to prevent garbage collection
+            self._window_icon = QIcon(str(icon_path))
+            self.setWindowIcon(self._window_icon)
 
         # Further increased window size for complete visibility (no scroll)
         # Height: 1020px to ensure conversion result fully visible

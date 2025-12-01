@@ -1039,12 +1039,13 @@ wheels = [
 ]
 
 [[package]]
-name = "rf-sparameter-analyzer"
-version = "0.1.0"
+name = "rf-converter"
+version = "1.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "numpy" },
     { name = "pandas" },
+    { name = "pillow" },
     { name = "plotly" },
     { name = "pyinstaller" },
     { name = "pyqt6" },
@@ -1077,6 +1078,7 @@ requires-dist = [
     { name = "kaleido", marker = "extra == 'image'", specifier = ">=0.2.1" },
     { name = "numpy", specifier = ">=1.25.0" },
     { name = "pandas", specifier = ">=2.1.0" },
+    { name = "pillow", specifier = ">=11.3.0" },
     { name = "plotly", specifier = ">=5.17.0" },
     { name = "pyinstaller", specifier = ">=6.17.0" },
     { name = "pyqt6", specifier = ">=6.10.0" },

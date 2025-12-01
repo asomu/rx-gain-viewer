@@ -15,6 +15,13 @@ import subprocess
 from pathlib import Path
 import time
 
+# Import version from package
+try:
+    from rf_converter import __version__, __app_name__
+except ImportError:
+    __version__ = "1.1.0"
+    __app_name__ = "RF Converter"
+
 # ANSI 색상 코드 (Windows Terminal 지원)
 class Colors:
     HEADER = '\033[95m'
@@ -103,11 +110,16 @@ def run_pyinstaller():
         print_error(f"spec 파일 없음: {spec_file}")
         return False
 
+    # spec 파일에서 실제 설정 읽기
+    spec_content = spec_file.read_text(encoding='utf-8')
+    upx_enabled = 'upx=True' in spec_content
+    console_disabled = 'console=False' in spec_content
+
     print(f"  spec 파일: {spec_file}")
     print(f"  빌드 옵션:")
     print(f"    - 단일 파일 (onefile): ✓")
-    print(f"    - GUI 모드 (no console): ✓")
-    print(f"    - UPX 압축: ✓")
+    print(f"    - GUI 모드 (no console): {'✓' if console_disabled else '✗'}")
+    print(f"    - UPX 압축: {'✓' if upx_enabled else '✗ (빠른 시작을 위해 비활성화)'}")
     print(f"    - Python 최적화 레벨: 2")
     print()
 
@@ -178,7 +190,7 @@ def create_readme():
     """배포용 README 생성"""
     print_step(4, "배포 문서 생성")
 
-    readme_content = """# RF Converter v1.1
+    readme_content = f"""# {__app_name__} v{__version__}
 
 ## 실행 방법
 
@@ -226,13 +238,13 @@ def create_readme():
 
 ## 버전 정보
 
-- Version: 1.1
-- Build Date: 2025-11-27
-- 개발: RF Converter Team
+- Version: {__version__}
+- Build Date: 2025-11-28
+- 개발: RF Engineering Team
 
 ---
 
-© 2025 RF Converter. All rights reserved.
+© 2025 {__app_name__}. All rights reserved.
 """
 
     readme_path = Path('dist/README.txt')
@@ -241,9 +253,9 @@ def create_readme():
 
 def main():
     """메인 빌드 프로세스"""
-    print_header("RF Converter 빌드 스크립트")
+    print_header(f"{__app_name__} 빌드 스크립트")
 
-    print(f"{Colors.BOLD}프로젝트:{Colors.ENDC} RF Converter v1.1")
+    print(f"{Colors.BOLD}프로젝트:{Colors.ENDC} {__app_name__} v{__version__}")
     print(f"{Colors.BOLD}빌드 타입:{Colors.ENDC} 단일 exe 파일 (onefile)")
     print(f"{Colors.BOLD}플랫폼:{Colors.ENDC} Windows (64-bit)")
     print()
