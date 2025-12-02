@@ -16,8 +16,8 @@ def build():
     print("=" * 70)
     print()
 
-    # 프로젝트 루트로 이동
-    project_root = Path(__file__).parent
+    # 프로젝트 루트로 이동 (scripts 폴더의 상위)
+    project_root = Path(__file__).parent.parent
     os.chdir(project_root)
 
     print(f"작업 디렉토리: {project_root}")
@@ -42,7 +42,7 @@ def build():
 
     pyinstaller_cmd = [
         sys.executable, '-m', 'PyInstaller',
-        '--name=RF_Converter',
+        '--name=RFConverter',
         '--windowed',  # GUI 모드 (콘솔창 숨김)
         '--onefile',   # 단일 실행 파일
         '--clean',     # 캐시 정리
@@ -89,7 +89,7 @@ def build():
     print()
     print("[3/3] 빌드 결과 확인...")
 
-    exe_path = Path('dist/RF_Converter.exe')
+    exe_path = Path('dist/RFConverter.exe')
     if not exe_path.exists():
         print("[ERROR] 실행 파일을 찾을 수 없습니다!")
         return False
@@ -104,7 +104,7 @@ def build():
     print("=" * 70)
     print()
     print("배포 방법:")
-    print("  1. dist/RF_Converter.exe 파일을 사용자에게 배포")
+    print("  1. dist/RFConverter.exe 파일을 사용자에게 배포")
     print("  2. 사용자가 실행하면 바로 사용 가능")
     print()
     print("버전 정보:")

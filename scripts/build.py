@@ -80,10 +80,14 @@ def check_icon():
 
 def clean_build_dirs():
     """이전 빌드 디렉토리 정리"""
+    # 프로젝트 루트로 이동 (scripts 폴더의 상위)
+    project_root = Path(__file__).parent.parent
+    os.chdir(project_root)
+
     print_step(1, "이전 빌드 파일 정리")
 
     dirs_to_clean = ['build', 'dist', '__pycache__']
-    files_to_clean = ['RF_Converter.exe']
+    files_to_clean = ['RFConverter.exe']
 
     for dir_name in dirs_to_clean:
         if Path(dir_name).exists():
@@ -160,7 +164,7 @@ def check_output():
     """빌드 결과 확인"""
     print_step(3, "빌드 결과 확인")
 
-    exe_path = Path('dist/RF_Converter.exe')
+    exe_path = Path('dist/RFConverter.exe')
 
     if not exe_path.exists():
         print_error(f"exe 파일 생성 실패: {exe_path}")
@@ -194,7 +198,7 @@ def create_readme():
 
 ## 실행 방법
 
-`RF_Converter.exe`를 더블클릭하여 실행하세요.
+`RFConverter.exe`를 더블클릭하여 실행하세요.
 
 ## 시스템 요구사항
 
@@ -284,14 +288,14 @@ def main():
 
     # 완료 메시지
     print_header("빌드 완료!")
-    print(f"{Colors.OKGREEN}{Colors.BOLD}✓ RF_Converter.exe 생성 성공{Colors.ENDC}")
+    print(f"{Colors.OKGREEN}{Colors.BOLD}✓ RFConverter.exe 생성 성공{Colors.ENDC}")
     print()
     print(f"  {Colors.BOLD}배포 파일:{Colors.ENDC}")
-    print(f"    - dist/RF_Converter.exe")
+    print(f"    - dist/RFConverter.exe")
     print(f"    - dist/README.txt")
     print()
     print(f"  {Colors.BOLD}다음 단계:{Colors.ENDC}")
-    print(f"    1. dist/RF_Converter.exe 실행하여 테스트")
+    print(f"    1. dist/RFConverter.exe 실행하여 테스트")
     print(f"    2. 정상 작동 확인 후 배포")
     print()
 
