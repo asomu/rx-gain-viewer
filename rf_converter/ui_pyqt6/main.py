@@ -4,6 +4,7 @@ Entry point for the desktop application
 """
 
 import sys
+import time
 from pathlib import Path
 from PyQt6.QtWidgets import QApplication, QMessageBox
 from PyQt6.QtCore import Qt, QLockFile, QDir
@@ -25,6 +26,9 @@ def main():
             # AppUserModelID format: CompanyName.ProductName.SubProduct.VersionInformation
             myappid = 'RFAnalyzer.RFConverter.Desktop.1'
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+            # Small delay to allow Windows to process AppUserModelID before QApplication
+            # This helps with Windows icon cache issues (see session-2025-12-01-pyinstaller-icon-fix.md)
+            time.sleep(0.1)
         except Exception:
             pass  # Non-critical, just continue
 

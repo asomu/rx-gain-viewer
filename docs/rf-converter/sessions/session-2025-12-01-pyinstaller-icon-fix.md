@@ -303,8 +303,9 @@ from rf_converter.ui_pyqt6.main_window import MainWindow
 ## 🔄 Next Steps
 
 ### Immediate
-- [ ] User testing of exe build
-- [ ] Verify icon stability across Windows versions
+- [x] User testing of exe build
+- [x] Verify icon stability across Windows versions
+- [ ] Test AppUserModelID delay fix for taskbar icon cache issue
 - [ ] Test on clean Windows install
 
 ### Future Enhancements
@@ -312,6 +313,42 @@ from rf_converter.ui_pyqt6.main_window import MainWindow
 - [ ] Auto-updater implementation
 - [ ] Installer creation (NSIS or Inno Setup)
 - [ ] Crash reporting system
+
+---
+
+## 🔧 Final Fix Attempt: AppUserModelID Delay
+
+### Issue 5: Taskbar Icon Cache Problem (Ongoing)
+
+**Symptom**:
+- Initial exe run shows default Python icon in taskbar
+- After "pin to taskbar", correct custom icon appears
+- Pin works because Windows uses shortcut icon info vs runtime cache
+
+**Web Search Findings**:
+1. SetCurrentProcessExplicitAppUserModelID must be called BEFORE QApplication ✅ (already doing)
+2. Some users report needing `time.sleep(0.1)` delay after SetCurrentProcessExplicitAppUserModelID
+3. Known Windows limitation with icon caching behavior
+4. Pin to taskbar works because it uses different icon resolution path
+
+**Fix Applied** (2025-12-01):
+```python
+# rf_converter/ui_pyqt6/main.py
+import time
+
+if sys.platform == 'win32':
+    try:
+        myappid = 'RFAnalyzer.RFConverter.Desktop.1'
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+        # Small delay to allow Windows to process AppUserModelID
+        time.sleep(0.1)
+    except Exception:
+        pass
+```
+
+**Rationale**: Give Windows time to process AppUserModelID before QApplication creates window, potentially resolving cache timing issue
+
+**Testing Required**: User needs to test new exe build to verify if delay resolves taskbar icon issue
 
 ---
 
