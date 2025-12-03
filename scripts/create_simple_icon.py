@@ -3,10 +3,19 @@ Simple icon generator for RF Converter
 Creates a grid/table style icon matching the PyQt6 SP_FileDialogDetailedView theme
 """
 
+from typing import List
 from PIL import Image, ImageDraw
 
-def create_grid_icon(size=256):
-    """Create a simple grid/table icon"""
+
+def create_grid_icon(size: int = 256) -> Image.Image:
+    """Create a simple grid/table icon.
+
+    Args:
+        size: Icon size in pixels (default: 256)
+
+    Returns:
+        PIL Image object with RGBA transparency
+    """
     # Create image with transparent background
     img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
@@ -57,8 +66,8 @@ def create_grid_icon(size=256):
 
     return img
 
-def main():
-    """Generate icon in multiple sizes and save as .ico"""
+def main() -> None:
+    """Generate icon in multiple sizes and save as .ico file."""
     print("Generating RF Converter icon...")
 
     # ICO format supports multiple sizes

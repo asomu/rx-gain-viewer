@@ -28,6 +28,40 @@ except ImportError:
     __app_name__ = "RF Converter"
 
 
+# UI Constants - Window Dimensions
+WINDOW_WIDTH = 850
+WINDOW_HEIGHT = 1020
+WINDOW_MIN_HEIGHT = 980
+WINDOW_MAX_HEIGHT = 1050
+WINDOW_X = 100
+WINDOW_Y = 50
+
+# UI Constants - Spacing
+LAYOUT_SPACING = 10
+SECTION_SPACING = 8
+
+# UI Constants - Font Sizes
+GROUPBOX_TITLE_FONT_SIZE = 12
+GROUPBOX_TITLE_FONT_INCREASE = 4  # Added to default size
+
+# Color Theme Constants
+THEME_COLORS = {
+    'primary': '#4CAF50',          # Green
+    'primary_hover': '#45a049',
+    'primary_pressed': '#3d8b40',
+    'success': '#27ae60',
+    'danger': '#e74c3c',
+    'info': '#3498db',
+    'border': '#dcdde1',
+    'border_focus': '#3498db',
+    'text': '#2f3640',
+    'text_light': '#7f8c8d',
+    'disabled_bg': '#bdc3c7',
+    'disabled_text': '#7f8c8d',
+    'background_light': '#ecf0f1',
+}
+
+
 class ConversionWorker(QThread):
     """
     Worker thread for file conversion
@@ -111,11 +145,11 @@ class MainWindow(QMainWindow):
             self._window_icon = QIcon(str(icon_path))
             self.setWindowIcon(self._window_icon)
 
-        # Further increased window size for complete visibility (no scroll)
+        # Window size optimized for complete visibility (no scroll required)
         # Height: 1020px to ensure conversion result fully visible
-        self.setGeometry(100, 50, 850, 1020)
-        self.setMinimumSize(850, 980)  # Increased minimum height
-        self.setMaximumSize(850, 1050)  # Increased maximum height
+        self.setGeometry(WINDOW_X, WINDOW_Y, WINDOW_WIDTH, WINDOW_HEIGHT)
+        self.setMinimumSize(WINDOW_WIDTH, WINDOW_MIN_HEIGHT)
+        self.setMaximumSize(WINDOW_WIDTH, WINDOW_MAX_HEIGHT)
 
         # Create scroll area for content overflow protection
         scroll_area = QScrollArea()
@@ -129,8 +163,8 @@ class MainWindow(QMainWindow):
         content_widget = QWidget()
         scroll_area.setWidget(content_widget)
         main_layout = QVBoxLayout(content_widget)
-        main_layout.setSpacing(8)  # Reduced from 16 to 10
-        main_layout.setContentsMargins(20, 20, 20, 20)  # Reduced margins
+        main_layout.setSpacing(SECTION_SPACING)
+        main_layout.setContentsMargins(20, 20, 20, 20)
 
         # Title section
         title_label = QLabel("RF SnP to CSV Converter")
@@ -425,93 +459,95 @@ class MainWindow(QMainWindow):
             self.convert_more_btn.setEnabled(True)
 
     def apply_styling(self):
-        """Apply modern styling to the application"""
-        # Main window style
-        self.setStyleSheet("""
-            QMainWindow {
-                background-color: #f5f6fa;
-            }
+        """Apply modern styling with theme colors"""
+        # Main window style using theme constants
+        stylesheet = f"""
+            QMainWindow {{
+                background-color: {THEME_COLORS['background_light']};
+            }}
 
-            QGroupBox {
+            QGroupBox {{
                 font-weight: bold;
-                font-size: 12pt;
-                border: 2px solid #dcdde1;
+                font-size: {GROUPBOX_TITLE_FONT_SIZE}pt;
+                border: 2px solid {THEME_COLORS['border']};
                 border-radius: 8px;
                 margin-top: 12px;
                 padding-top: 12px;
                 background-color: white;
-            }
+            }}
 
-            QGroupBox::title {
+            QGroupBox::title {{
                 subcontrol-origin: margin;
                 subcontrol-position: top left;
                 padding: 4px 8px;
-                color: #2f3640;
-                font-size: 12pt;
-            }
+                color: {THEME_COLORS['text']};
+                font-size: {GROUPBOX_TITLE_FONT_SIZE}pt;
+            }}
 
-            QPushButton {
-                background-color: #4CAF50;
+            QPushButton {{
+                background-color: {THEME_COLORS['primary']};
                 color: white;
                 border: none;
                 border-radius: 6px;
                 padding: 10px 20px;
                 font-weight: bold;
                 font-size: 11pt;
-            }
+            }}
 
-            QPushButton:hover {
-                background-color: #45a049;
-            }
+            QPushButton:hover {{
+                background-color: {THEME_COLORS['primary_hover']};
+            }}
 
-            QPushButton:pressed {
-                background-color: #3d8b40;
-            }
+            QPushButton:pressed {{
+                background-color: {THEME_COLORS['primary_pressed']};
+            }}
 
-            QPushButton:disabled {
-                background-color: #bdc3c7;
-                color: #7f8c8d;
-            }
+            QPushButton:disabled {{
+                background-color: {THEME_COLORS['disabled_bg']};
+                color: {THEME_COLORS['disabled_text']};
+            }}
 
-            QPushButton#start_conversion {
-                background-color: #27ae60;
+            QPushButton#start_conversion {{
+                background-color: {THEME_COLORS['success']};
                 font-size: 13pt;
-            }
+            }}
 
-            QPushButton#start_conversion:hover {
+            QPushButton#start_conversion:hover {{
                 background-color: #229954;
-            }
+            }}
 
-            QLineEdit {
-                border: 2px solid #dcdde1;
+            QLineEdit {{
+                border: 2px solid {THEME_COLORS['border']};
                 border-radius: 4px;
                 padding: 8px;
                 background-color: white;
                 font-size: 10pt;
-            }
+            }}
 
-            QLineEdit:focus {
-                border-color: #3498db;
-            }
+            QLineEdit:focus {{
+                border-color: {THEME_COLORS['border_focus']};
+            }}
 
-            QCheckBox, QRadioButton {
+            QCheckBox, QRadioButton {{
                 font-size: 10pt;
                 spacing: 8px;
-            }
+            }}
 
-            QProgressBar {
-                border: 2px solid #dcdde1;
+            QProgressBar {{
+                border: 2px solid {THEME_COLORS['border']};
                 border-radius: 6px;
                 text-align: center;
-                background-color: #ecf0f1;
+                background-color: {THEME_COLORS['background_light']};
                 height: 30px;
-            }
+            }}
 
-            QProgressBar::chunk {
-                background-color: #3498db;
+            QProgressBar::chunk {{
+                background-color: {THEME_COLORS['info']};
                 border-radius: 4px;
-            }
-        """)
+            }}
+        """
+
+        self.setStyleSheet(stylesheet)
 
         # Set object name for specific styling
         self.convert_btn.setObjectName("start_conversion")
