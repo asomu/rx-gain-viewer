@@ -256,6 +256,42 @@ class BandMapper:
         """
         return set(self._missing_keys)
 
+    @property
+    def mappings(self) -> Dict[str, str]:
+        """Get current mappings (read-only copy).
+
+        Returns:
+            Dictionary of current mappings.
+        """
+        return dict(self._mapping_dict)
+
+    @mappings.setter
+    def mappings(self, value: Dict[str, str]) -> None:
+        """Set mappings directly (for dialog Apply button).
+
+        Args:
+            value: Dictionary of band mappings
+
+        Raises:
+            TypeError: If value is not a dictionary
+            ValueError: If any key or value is not a string
+        """
+        if not isinstance(value, dict):
+            raise TypeError("Mappings must be a dictionary")
+
+        # Validate all keys and values are strings
+        for key, val in value.items():
+            if not isinstance(key, str) or not isinstance(val, str):
+                raise ValueError(f"All mappings must be strings: {key}: {val}")
+
+        # Update mappings
+        self._mapping_dict = dict(value)
+        self._is_loaded = True
+        self._file_path = None  # Mark as not file-backed
+        self._missing_keys.clear()
+
+        logger.info(f"Mappings set directly: {len(self._mapping_dict)} entries")
+
     def clear(self) -> None:
         """Clear all mapping data.
 

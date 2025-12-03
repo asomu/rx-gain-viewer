@@ -1,12 +1,12 @@
 {
-  "schema_version": "1.0",
-  "name": "",
+  "version": "1.0",
   "description": "Basic band mapping example",
   "mappings": {
     "B1": "TM01_A",
     "B3": "TM03_A",
     "B7": "TM07_A",
     "B41": "TM41_A",
-    "N77": "TN77_A"
+    "N77": "TN77_A",
+    "N78": "TN78_A"
   }
 }

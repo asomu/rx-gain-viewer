@@ -297,6 +297,12 @@ class MainWindow(QMainWindow):
         self.mapping_browse_btn.clicked.connect(self.browse_mapping_file)
         file_layout.addWidget(self.mapping_browse_btn)
 
+        self.mapping_configure_btn = QPushButton("Configure...")
+        self.mapping_configure_btn.setEnabled(False)
+        self.mapping_configure_btn.setToolTip("Open mapping editor")
+        self.mapping_configure_btn.clicked.connect(self.open_mapping_dialog)
+        file_layout.addWidget(self.mapping_configure_btn)
+
         layout.addLayout(file_layout)
 
         # Status label
@@ -597,6 +603,7 @@ class MainWindow(QMainWindow):
         # Enable/disable controls
         self.mapping_file_edit.setEnabled(is_enabled)
         self.mapping_browse_btn.setEnabled(is_enabled)
+        self.mapping_configure_btn.setEnabled(is_enabled)
 
         if is_enabled:
             # If file already specified, try to load it
@@ -642,6 +649,38 @@ class MainWindow(QMainWindow):
                 f"Failed to load mapping file:\n\n{message}\n\n"
                 "Please check the file format and try again."
             )
+
+    def open_mapping_dialog(self):
+        """Open band mapping configuration dialog"""
+        from rf_converter.ui_pyqt6.dialogs import BandMappingDialog
+
+        # Get current file
+        current_file = self.mapping_file_edit.text()
+        if current_file == "Select JSON mapping file..." or not current_file:
+            current_file = None
+
+        # Create and show dialog
+        dialog = BandMappingDialog(self, current_file)
+        dialog.mapping_saved.connect(self.on_mapping_saved)
+        dialog.mapping_applied.connect(self.on_mapping_applied)
+
+        dialog.exec()
+
+    def on_mapping_saved(self, file_path: str):
+        """Handle mapping saved from dialog"""
+        from pathlib import Path
+
+        self.mapping_file_edit.setText(file_path)
+        self.mapping_status_label.setText(f"✅ Saved: {Path(file_path).name}")
+        self.mapping_status_label.setStyleSheet("color: green; font-weight: bold;")
+        self.logger.log_info(f"Band mapping saved: {file_path}")
+
+    def on_mapping_applied(self, mappings: dict):
+        """Handle mapping applied from dialog"""
+        count = len(mappings)
+        self.mapping_status_label.setText(f"✅ Applied ({count} mappings)")
+        self.mapping_status_label.setStyleSheet("color: green; font-weight: bold;")
+        self.logger.log_info(f"Band mapping applied: {count} mappings")
 
     def on_files_changed(self, files, total_size_mb):
         """Handle file selection changes"""
