@@ -152,7 +152,7 @@ class BandMappingDialog(QDialog):
 
         self.table.setColumnWidth(0, 350)
         self.table.setColumnWidth(1, 350)
-        self.table.setColumnWidth(2, 60)
+        self.table.setColumnWidth(2, 70)
 
         # Row height and styling - increased for Korean text rendering
         self.table.verticalHeader().setDefaultSectionSize(40)
@@ -231,7 +231,7 @@ class BandMappingDialog(QDialog):
 
         # Column 2: Delete button
         delete_btn = QPushButton("Del")
-        delete_btn.setFixedSize(50, 32)
+        delete_btn.setFixedSize(60, 32)
         delete_btn.setToolTip("이 매핑 삭제")
         delete_btn.setStyleSheet("""
             QPushButton {
@@ -240,6 +240,7 @@ class BandMappingDialog(QDialog):
                 font-weight: bold;
                 border: none;
                 border-radius: 3px;
+                padding: 4px 8px;
             }
             QPushButton:hover {
                 background-color: #c0392b;
@@ -405,7 +406,7 @@ class BandMappingDialog(QDialog):
 
             # Delete button
             delete_btn = QPushButton("Del")
-            delete_btn.setFixedSize(50, 32)
+            delete_btn.setFixedSize(60, 32)
             delete_btn.setToolTip("이 매핑 삭제")
             delete_btn.setStyleSheet("""
                 QPushButton {
@@ -414,6 +415,7 @@ class BandMappingDialog(QDialog):
                     font-weight: bold;
                     border: none;
                     border-radius: 3px;
+                    padding: 4px 8px;
                 }
                 QPushButton:hover {
                     background-color: #c0392b;
