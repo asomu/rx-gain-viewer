@@ -229,9 +229,8 @@ class BandMappingDialog(QDialog):
         # Column 1: Mapped value (editable)
         self.table.setItem(row, 1, QTableWidgetItem(""))
 
-        # Column 2: Delete button
+        # Column 2: Delete button (full-width in cell)
         delete_btn = QPushButton("Del")
-        delete_btn.setFixedSize(60, 32)
         delete_btn.setToolTip("이 매핑 삭제")
         delete_btn.setStyleSheet("""
             QPushButton {
@@ -239,8 +238,9 @@ class BandMappingDialog(QDialog):
                 color: white;
                 font-weight: bold;
                 border: none;
-                border-radius: 3px;
-                padding: 4px 8px;
+                border-radius: 0px;
+                padding: 8px;
+                margin: 0px;
             }
             QPushButton:hover {
                 background-color: #c0392b;
@@ -404,9 +404,8 @@ class BandMappingDialog(QDialog):
             self.table.setItem(row, 0, QTableWidgetItem(original))
             self.table.setItem(row, 1, QTableWidgetItem(mapped))
 
-            # Delete button
+            # Delete button (full-width in cell)
             delete_btn = QPushButton("Del")
-            delete_btn.setFixedSize(60, 32)
             delete_btn.setToolTip("이 매핑 삭제")
             delete_btn.setStyleSheet("""
                 QPushButton {
@@ -414,8 +413,9 @@ class BandMappingDialog(QDialog):
                     color: white;
                     font-weight: bold;
                     border: none;
-                    border-radius: 3px;
-                    padding: 4px 8px;
+                    border-radius: 0px;
+                    padding: 8px;
+                    margin: 0px;
                 }
                 QPushButton:hover {
                     background-color: #c0392b;
