@@ -3,6 +3,8 @@ Main Window for RF SnP to CSV Converter
 Professional PyQt6 UI with modern design
 """
 
+import os
+import sys
 from pathlib import Path
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGroupBox,
@@ -10,7 +12,7 @@ from PyQt6.QtWidgets import (
     QProgressBar, QFileDialog, QMessageBox, QButtonGroup, QScrollArea
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QSettings
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QIcon
 
 from rf_converter.core import ConversionService, ConversionResult
 from rf_converter.core.logger import get_logger
@@ -97,10 +99,6 @@ class MainWindow(QMainWindow):
 
         # Set window icon - must be set here for PyInstaller taskbar icon support
         # Handle both development (source) and PyInstaller (bundled) paths
-        import sys
-        from pathlib import Path
-        from PyQt6.QtGui import QIcon
-
         if getattr(sys, 'frozen', False):
             # Running as PyInstaller bundle - icon is at _MEIPASS root
             icon_path = Path(sys._MEIPASS) / "icon.ico"
@@ -705,7 +703,6 @@ class MainWindow(QMainWindow):
         output_path = Path(self.output_path_edit.text())
 
         if output_path.exists():
-            import os
             os.startfile(output_path)
         else:
             QMessageBox.warning(self, "File Not Found", "Output CSV file does not exist.")
@@ -715,7 +712,6 @@ class MainWindow(QMainWindow):
         output_path = Path(self.output_path_edit.text())
 
         if output_path.parent.exists():
-            import os
             os.startfile(output_path.parent)
         else:
             QMessageBox.warning(self, "Folder Not Found", "Output folder does not exist.")

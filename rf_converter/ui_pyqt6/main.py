@@ -4,10 +4,9 @@ Entry point for the desktop application
 """
 
 import sys
-import time
 from pathlib import Path
 from PyQt6.QtWidgets import QApplication, QMessageBox
-from PyQt6.QtCore import Qt, QLockFile, QDir
+from PyQt6.QtCore import Qt, QLockFile, QStandardPaths
 from PyQt6.QtGui import QIcon
 
 # Windows taskbar icon support
@@ -19,16 +18,17 @@ from rf_converter.ui_pyqt6.main_window import MainWindow
 
 def main():
     """Application entry point"""
-    # Windows taskbar icon fix: Set AppUserModelID
+    # Windows taskbar icon: Set AppUserModelID BEFORE QApplication creation
     # This ensures Windows uses our custom icon instead of Python's default
     if sys.platform == 'win32':
         try:
             # AppUserModelID format: CompanyName.ProductName.SubProduct.VersionInformation
             myappid = 'RFAnalyzer.RFConverter.Desktop.1'
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-            # Small delay to allow Windows to process AppUserModelID before QApplication
-            # This helps with Windows icon cache issues (see session-2025-12-01-pyinstaller-icon-fix.md)
-            time.sleep(0.1)
+
+            # Note: Windows icon cache issues may still occur due to OS-level caching.
+            # Workaround: Right-click taskbar icon → "Pin to taskbar" for persistence.
+            # See: https://github.com/pyinstaller/pyinstaller/issues/1430
         except Exception:
             pass  # Non-critical, just continue
 
@@ -56,9 +56,17 @@ def main():
         # Keep reference alive for app lifetime (prevents garbage collection)
         app.app_icon = app_icon
 
-    # Single instance check
-    lock_file_path = QDir.temp().filePath("RFConverter.lock")
-    lock_file = QLockFile(lock_file_path)
+    # Single instance check using secure app-specific directory
+    # Use AppLocalDataLocation instead of system temp for security
+    lock_dir = QStandardPaths.writableLocation(
+        QStandardPaths.StandardLocation.AppLocalDataLocation
+    )
+    lock_file_path = Path(lock_dir) / "RFConverter.lock"
+
+    # Ensure directory exists
+    lock_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    lock_file = QLockFile(str(lock_file_path))
 
     if not lock_file.tryLock(100):
         # Already running
