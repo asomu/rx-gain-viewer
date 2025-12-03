@@ -17,36 +17,9 @@
 
 ## 1. 프로그램 실행
 
-### 사용자용: EXE 파일 실행
-
 ```
 RFConverter.exe 더블클릭
 ```
-
-> ✅ **Python 설치 불필요!**
-> EXE 파일만 있으면 바로 실행됩니다.
-
-### 개발자용: 소스 코드 실행
-
-<details>
-<summary>개발 환경에서 실행 (클릭하여 펼치기)</summary>
-
-**방법 1: 배치 파일**
-```bash
-run_gui.bat
-```
-
-**방법 2: Python 직접**
-```bash
-.venv\Scripts\python.exe rf_converter\ui_pyqt6\main.py
-```
-
-**방법 3: UV**
-```bash
-uv run rf_converter/ui_pyqt6/main.py
-```
-
-</details>
 
 ---
 
@@ -178,8 +151,6 @@ uv run rf_converter/ui_pyqt6/main.py
 2. **Windows Defender 확인**: 바이러스 검사에서 차단되었는지 확인
 3. **경로 확인**: 한글이나 특수문자가 없는 경로에 EXE 파일 위치
 4. **재다운로드**: 파일 손상 가능성 - 다시 다운로드
-
-> **개발자용**: 소스 코드로 실행하려면 위의 "개발자용 실행" 섹션 참고
 
 ### 문제 2: 파일 선택 안됨
 
@@ -319,36 +290,3 @@ type %USERPROFILE%\.rf_converter\logs\rf_converter.log
 # 폴더 열기
 explorer %USERPROFILE%\.rf_converter\logs
 ```
-
----
-
-## 추가 도움말
-
-### 상세 매뉴얼
-- **완전 가이드**: [USER_MANUAL_KR.md](USER_MANUAL_KR.md)
-- **Band Mapping**: [BAND_MAPPING_QUICKSTART_KR.md](BAND_MAPPING_QUICKSTART_KR.md)
-- **개발 로그**: [development-log.md](development-log.md)
-
-### 프로젝트 정보
-- 위치: `C:\Python\Project\rx-gain-viewer`
-- 버전: v1.1
-- 지원 Band: 48개
-- 측정 타입: Rx Gain (Tx Power, Isolation 준비 중)
-
----
-
-**문서 버전**: v1.0 (Quick Start)
-**최종 업데이트**: 2025-12-03
-**작성자**: RF Analyzer Team
-
----
-
-## 핵심 정리
-
-1. **실행**: `run_gui.bat` 더블클릭
-2. **파일**: SnP 파일 드래그 앤 드롭
-3. **설정**: Frequency filtering ON, Auto-detect band ON
-4. **변환**: START CONVERSION 클릭
-5. **확인**: Open CSV 클릭
-
-**5분이면 충분합니다!**
