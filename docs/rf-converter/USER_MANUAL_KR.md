@@ -1,6 +1,8 @@
 # RF Converter 사용자 매뉴얼
 
-> 🆕 **Band Mapping 기능 안내**
+> ⚡ **빠르게 시작하기**: [RF Converter 빠른 가이드](USER_MANUAL_QUICKSTART_KR.md) (5분 완성)
+>
+> 🆕 **Band Mapping 기능**
 > - **빠른 시작**: [Band Mapping 빠른 가이드](BAND_MAPPING_QUICKSTART_KR.md) (5분)
 > - **상세 매뉴얼**: [Band Mapping 완전 가이드](BAND_MAPPING_MANUAL_KR.md) (고급 기능, FAQ)
 

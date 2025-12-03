@@ -51,7 +51,8 @@
       "Bash(test:*)",
       "Read(//c/Users/mj896840/Downloads/**)",
       "Bash(.venvScriptspython.exe:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(awk '{print $9, \"\"\"\"(\"\"\"\" $5 \"\"\"\")\"\"\"\"}')"
     ],
     "deny": [],
     "ask": []
