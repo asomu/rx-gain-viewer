@@ -6,7 +6,7 @@
 
 ## 목차
 
-1. [3가지 실행 방법](#1-3가지-실행-방법)
+1. [프로그램 실행](#1-프로그램-실행)
 2. [5단계 변환](#2-5단계-변환)
 3. [주요 버튼 기능](#3-주요-버튼-기능)
 4. [지원 Band](#4-지원-band)
@@ -15,32 +15,45 @@
 
 ---
 
-## 1. 3가지 실행 방법
+## 1. 프로그램 실행
 
-### 방법 1: 배치 파일 (가장 간단)
-```bash
-C:\Python\Project\rx-gain-viewer\run_gui.bat
+### 사용자용: EXE 파일 실행
+
 ```
-→ 파일 더블클릭만 하면 됨
+RFConverter.exe 더블클릭
+```
 
-### 방법 2: Python 직접 실행
+> ✅ **Python 설치 불필요!**
+> EXE 파일만 있으면 바로 실행됩니다.
+
+### 개발자용: 소스 코드 실행
+
+<details>
+<summary>개발 환경에서 실행 (클릭하여 펼치기)</summary>
+
+**방법 1: 배치 파일**
 ```bash
-cd C:\Python\Project\rx-gain-viewer
+run_gui.bat
+```
+
+**방법 2: Python 직접**
+```bash
 .venv\Scripts\python.exe rf_converter\ui_pyqt6\main.py
 ```
 
-### 방법 3: UV 실행
+**방법 3: UV**
 ```bash
-cd C:\Python\Project\rx-gain-viewer
 uv run rf_converter/ui_pyqt6/main.py
 ```
+
+</details>
 
 ---
 
 ## 2. 5단계 변환
 
 ### 단계 1: 프로그램 실행
-- `run_gui.bat` 더블클릭
+- `RFConverter.exe` 더블클릭
 
 ### 단계 2: 파일 선택
 - **드래그 앤 드롭**: SnP 파일들을 화면에 드래그
@@ -158,18 +171,15 @@ uv run rf_converter/ui_pyqt6/main.py
 
 ### 문제 1: 프로그램 실행 안됨
 
-**증상**: 창이 바로 닫힘, "Python 없음" 오류
+**증상**: EXE 파일 더블클릭해도 창이 안 열림
 
 **해결**:
-```bash
-# Python 확인
-python --version
+1. **관리자 권한으로 실행**: RFConverter.exe 우클릭 → "관리자 권한으로 실행"
+2. **Windows Defender 확인**: 바이러스 검사에서 차단되었는지 확인
+3. **경로 확인**: 한글이나 특수문자가 없는 경로에 EXE 파일 위치
+4. **재다운로드**: 파일 손상 가능성 - 다시 다운로드
 
-# 가상환경 활성화
-cd C:\Python\Project\rx-gain-viewer
-.venv\Scripts\activate.bat
-python rf_converter\ui_pyqt6\main.py
-```
+> **개발자용**: 소스 코드로 실행하려면 위의 "개발자용 실행" 섹션 참고
 
 ### 문제 2: 파일 선택 안됨
 
